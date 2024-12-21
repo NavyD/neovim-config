@@ -58,3 +58,21 @@ if jit.os == "Windows" then
     LazyVim.terminal.setup(win_sh)
   end
 end
+
+-- [No Nonsense Neovim Client in Rust](https://github.com/neovide/neovide)
+-- [neovide configuration](https://neovide.dev/configuration.html)
+if vim.g.neovide then
+  vim.o.guifont = "Cascadia Mono,Sarasa Mono SC"
+
+  -- [How Can I Dynamically Change The Scale At Runtime?](https://neovide.dev/faq.html#how-can-i-dynamically-change-the-scale-at-runtime)
+  vim.g.neovide_scale_factor = 0.8 -- default 1
+  local change_scale_factor = function(delta)
+    vim.g.neovide_scale_factor = vim.g.neovide_scale_factor * delta
+  end
+  vim.keymap.set("n", "<C-=>", function()
+    change_scale_factor(1.25)
+  end)
+  vim.keymap.set("n", "<C-->", function()
+    change_scale_factor(1 / 1.25)
+  end)
+end
