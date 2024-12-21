@@ -50,9 +50,10 @@ end)
 if jit.os == "Windows" then
   local win_sh = nil
   if vim.fn.executable("pwsh") then
-    win_sh = "pwsh"
+    -- [options.lua recommendation for terminal shell on Windows for pwsh should be "pwsh.exe" now #4805](https://github.com/LazyVim/LazyVim/issues/4805)
+    win_sh = "pwsh.exe"
   elseif vim.fn.executable("powershell") then
-    win_sh = "powershell"
+    win_sh = "powershell.exe"
   end
   if win_sh then
     LazyVim.terminal.setup(win_sh)
