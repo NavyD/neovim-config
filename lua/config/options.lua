@@ -44,3 +44,18 @@ vim.schedule(function()
     }
   end
 end)
+
+-- 在win上配置默认使用pwsh
+-- 参考: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua
+if jit.os == 'Windows' then
+  local win_sh = nil
+  if vim.fn.executable("pwsh") then
+    win_sh = "pwsh"
+  elseif vim.fn.executable("powershell") then
+    win_sh = "powershell"
+  end
+  if win_sh then
+    LazyVim.terminal.setup(win_sh)
+  end
+end
+
