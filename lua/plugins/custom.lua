@@ -16,6 +16,9 @@ return {
       -- Toggle with `:Gitsigns toggle_current_line_blame`
       -- 启用git blame line
       current_line_blame = true,
+      current_line_blame_opts = {
+        delay = 300,
+      },
     },
   },
 }
