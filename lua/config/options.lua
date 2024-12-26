@@ -7,6 +7,10 @@
 -- [Disable autoformat for some buffers](https://www.lazyvim.org/configuration/tips#disable-autoformat-for-some-buffers)
 vim.g.autoformat = false
 
+-- 在vscode中禁用动画，否则会导致vim滚动操作出错
+-- 参考：[fix(vscode): disable animate in vscode #5124](https://github.com/LazyVim/LazyVim/pull/5124)
+vim.g.snacks_animate = not vim.g.vscode
+
 -- [Unable to copy text from lazyvim running in remote ssh host to host clipboard #4602](https://github.com/LazyVim/LazyVim/discussions/4602)
 -- 参考：https://github.com/cameronr/kickstart-modular.nvim/blob/master/lua/options.lua
 -- Sync clipboard between OS and Neovim.
