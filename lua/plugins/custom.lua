@@ -13,4 +13,6 @@ return {
     },
   },
   { "folke/snacks.nvim", cond = not vim.g.vscode },
+  -- 禁用init 避免在打开cz文件时卡顿
+  { "xvzc/chezmoi.nvim", enabled = true, init = function() end },
 }
