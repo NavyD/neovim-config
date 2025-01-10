@@ -12,11 +12,10 @@ return {
       },
     },
   },
-  { "folke/snacks.nvim", cond = not vim.g.vscode },
   -- 禁用init 避免在打开cz文件时卡顿
   { "xvzc/chezmoi.nvim", enabled = true, init = function() end },
-  { 
-    "gbprod/yanky.nvim", 
+  {
+    "gbprod/yanky.nvim",
     -- 在termux中无效且可能会在打开文件时阻塞 禁止加载
     cond = not (vim.env.PREFIX and string.find(vim.env.PREFIX, "com.termux")),
   },

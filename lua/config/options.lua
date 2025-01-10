@@ -7,10 +7,6 @@
 -- [Disable autoformat for some buffers](https://www.lazyvim.org/configuration/tips#disable-autoformat-for-some-buffers)
 vim.g.autoformat = false
 
--- 在vscode中禁用动画，否则会导致vim滚动操作出错
--- 参考：[fix(vscode): disable animate in vscode #5124](https://github.com/LazyVim/LazyVim/pull/5124)
-vim.g.snacks_animate = not vim.g.vscode
-
 -- fix: 在windows上无HOME变量导致nil连接str出错
 -- lazy/LazyVim/lua/lazyvim/plugins/extras/util/chezmoi.lua:60: attempt to concatenate a nil value
 -- lazy/LazyVim/lua/lazyvim/plugins/extras/util/chezmoi.lua:31: attempt to concatenate a nil value
