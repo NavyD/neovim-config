@@ -5,7 +5,7 @@ return {
   enabled = true,
   keys = {
     {
-      "<leader>gd",
+      "<leader>gv",
       -- 使用一个函数打开关闭diffview窗口
       -- 参考[[Feature Request] DiffviewToggle command. #450](https://github.com/sindrets/diffview.nvim/issues/450)
       function()
