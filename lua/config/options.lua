@@ -56,17 +56,12 @@ end)
 
 -- 在win上配置默认使用pwsh
 -- 参考: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua
+-- https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/util/terminal.lua
 if jit.os == "Windows" then
-  local win_sh = nil
-  if vim.fn.executable("pwsh") then
-    -- [options.lua recommendation for terminal shell on Windows for pwsh should be "pwsh.exe" now #4805](https://github.com/LazyVim/LazyVim/issues/4805)
-    win_sh = "pwsh.exe"
-  elseif vim.fn.executable("powershell") then
-    win_sh = "powershell.exe"
-  end
-  if win_sh then
-    LazyVim.terminal.setup(win_sh)
-  end
+  -- shell=pwsh/powershell无区别，会优先考虑pwsh
+  LazyVim.terminal.setup("pwsh")
+  -- vim.o.shell = "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+  -- vim.o.shell = '"C:\\Program Files\\PowerShell\\7\\pwsh.exe"'
 end
 
 -- [No Nonsense Neovim Client in Rust](https://github.com/neovide/neovide)
