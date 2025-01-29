@@ -16,22 +16,19 @@ if jit.os == "Windows" then
   vim.env.HOME = os.getenv("USERPROFILE"):gsub("\\", "/")
 end
 
--- [Unable to copy text from lazyvim running in remote ssh host to host clipboard #4602](https://github.com/LazyVim/LazyVim/discussions/4602)
--- 参考：https://github.com/cameronr/kickstart-modular.nvim/blob/master/lua/options.lua
--- Sync clipboard between OS and Neovim.
---  Schedule the setting after `UiEnter` because it can increase startup-time.
---  Remove this option if you want your OS clipboard to remain independent.
---  See `:help 'clipboard'`
-vim.schedule(function()
-  vim.opt.clipboard:append("unnamedplus")
-
-  -- Fix "waiting for osc52 response from terminal" message
-  -- https://github.com/neovim/neovim/issues/28611
-
-  if vim.env.SSH_TTY ~= nil then
-    -- Set up clipboard for ssh
-
-    local function my_paste(_)
+-- Fix "waiting for osc52 response from terminal" message
+-- https://github.com/neovim/neovim/issues/28611
+-- Set up clipboard for ssh
+if vim.env.SSH_TTY ~= nil then
+  -- [Unable to copy text from lazyvim running in remote ssh host to host clipboard #4602](https://github.com/LazyVim/LazyVim/discussions/4602)
+  -- 参考：https://github.com/cameronr/kickstart-modular.nvim/blob/master/lua/options.lua
+  -- Sync clipboard between OS and Neovim.
+  --  Schedule the setting after `UiEnter` because it can increase startup-time.
+  --  Remove this option if you want your OS clipboard to remain independent.
+  --  See `:help 'clipboard'`
+  vim.opt.clipboard = "unnamedplus"
+  vim.schedule(function()
+    local function reg_paste_fn(_)
       return function(_)
         local content = vim.fn.getreg('"')
         return vim.split(content, "\n")
@@ -47,12 +44,12 @@ vim.schedule(function()
       paste = {
         -- No OSC52 paste action since wezterm doesn't support it
         -- Should still paste from nvim
-        ["+"] = my_paste("+"),
-        ["*"] = my_paste("*"),
+        ["+"] = reg_paste_fn("+"),
+        ["*"] = reg_paste_fn("*"),
       },
     }
-  end
-end)
+  end)
+end
 
 -- 在win上配置默认使用pwsh
 -- 参考: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua

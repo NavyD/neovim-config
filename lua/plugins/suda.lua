@@ -1,3 +1,4 @@
+---@type LazySpec[]
 return {
   {
     -- [suda is a plugin to read or write files with sudo command](https://github.com/lambdalisue/vim-suda)

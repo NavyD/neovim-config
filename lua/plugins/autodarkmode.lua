@@ -4,6 +4,8 @@ return {
   "f-person/auto-dark-mode.nvim",
   -- 在termux中无效禁止加载
   cond = not (vim.env.PREFIX and string.find(vim.env.PREFIX, "com.termux")),
+  ---@module 'auto-dark-mode'
+  ---@type AutoDarkModeOptions
   opts = {
     update_interval = 1000,
     set_dark_mode = function()

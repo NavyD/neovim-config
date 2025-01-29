@@ -1,9 +1,11 @@
----@type LazyPluginSpec
+---@type LazyPluginSpec[]
 return {
   -- { "folke/noice.nvim", cond = not (vim.g.neovide or false) },
   {
     "lewis6991/gitsigns.nvim",
     -- https://github.com/lewis6991/gitsigns.nvim#installation--usage
+    ---@module 'gitsigns'
+    ---@class Gitsigns.Config
     opts = {
       -- Toggle with `:Gitsigns toggle_current_line_blame`
       -- 启用git blame line
@@ -22,11 +24,19 @@ return {
   },
   {
     "nvim-treesitter/nvim-treesitter",
-    -- 扩展默认的配置参考https://www.lazyvim.org/configuration/plugins#%EF%B8%8F-customizing-plugin-specs
+    -- 扩展默认的配置参考 https://www.lazyvim.org/configuration/plugins#%EF%B8%8F-customizing-plugin-specs
     -- opts是由之前定义的table，可以配置func修改添加新的
-    ---@param opts cmp.ConfigSchema
+    ---@module 'nvim-treesitter'
+    ---@param opts TSConfig
     opts = function(_, opts)
-      vim.list_extend(opts.ensure_installed, { "powershell", "gotmpl" })
+      local new_installeds = { "powershell", "gotmpl" }
+      local installed = opts.ensure_installed
+      if type(installed) == "table" then
+        vim.list_extend(installed, new_installeds)
+      else
+        table.insert(new_installeds, installed)
+        opts.ensure_installed = new_installeds
+      end
     end,
   },
 }

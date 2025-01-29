@@ -5,6 +5,11 @@ return {
   "willothy/flatten.nvim",
   -- config = true,
   -- or pass configuration with
+  ---@class FlattenConfigOpts: Flatten.PartialConfig
+  ---@field hooks Flatten.Hooks?
+
+  ---@module 'flatten'
+  ---@type FlattenConfigOpts
   opts = {
     nest_if_no_args = true,
   }, -- Ensure that it runs first to minimize delay when opening file from terminal
