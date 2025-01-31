@@ -7,6 +7,10 @@
 -- [Disable autoformat for some buffers](https://www.lazyvim.org/configuration/tips#disable-autoformat-for-some-buffers)
 vim.g.autoformat = false
 
+-- In case you don't want to use `:LazyExtras`,
+-- -- then you need to set the option below.
+vim.g.lazyvim_picker = "snacks"
+
 -- fix: 在windows上无HOME变量导致nil连接str出错
 -- lazy/LazyVim/lua/lazyvim/plugins/extras/util/chezmoi.lua:60: attempt to concatenate a nil value
 -- lazy/LazyVim/lua/lazyvim/plugins/extras/util/chezmoi.lua:31: attempt to concatenate a nil value
