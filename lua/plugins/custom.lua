@@ -39,4 +39,22 @@ return {
       end
     end,
   },
+  {
+    "nvim-treesitter/nvim-treesitter",
+    opts = {
+      textobjects = {
+        -- 移动代码参数位置
+        -- [Text objects: swap](https://github.com/nvim-treesitter/nvim-treesitter-textobjects#text-objects-swap)
+        swap = {
+          enable = true,
+          swap_next = {
+            ["<leader>a"] = "@parameter.inner",
+          },
+          swap_previous = {
+            ["<leader>A"] = "@parameter.inner",
+          },
+        },
+      },
+    },
+  },
 }
