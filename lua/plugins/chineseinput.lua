@@ -7,6 +7,10 @@
 local function log_error(msg)
   vim.notify(msg, vim.log.levels.ERROR)
 end
+---@param msg string
+local function log_info(msg)
+  vim.notify(msg, vim.log.levels.INFO)
+end
 
 local data_dir = vim.fn.stdpath("data")
 if type(data_dir) == "table" then
@@ -15,6 +19,51 @@ if type(data_dir) == "table" then
 end
 local venv_home = vim.fs.joinpath(data_dir, ".venv")
 local venv_py_bin = vim.fs.joinpath(venv_home, jit.os == "Windows" and "Scripts/python.exe" or "bin/python3")
+
+---@param plugin_dir string
+---@return string
+---@return string
+local function get_pylib_path(plugin_dir)
+  local build_dir = vim.fs.joinpath(plugin_dir, "pythonx")
+  -- jieba so库目录
+  -- https://github.com/kkew3/jieba.vim/issues/10#issuecomment-2565322025
+  local pyd_path = vim.fs.joinpath(build_dir, "jieba_vim/jieba_vim_rs") .. (jit.os == "Windows" and ".pyd" or ".so")
+  local pyd_path_tmp = pyd_path .. ".bak"
+  return pyd_path, pyd_path_tmp
+end
+
+---@param plugin LazyPlugin
+---@return string|nil
+---@return string|nil
+local function get_git_tag(plugin)
+  local system_opts = { text = true, cwd = plugin.dir }
+  local hash_out = vim.system({ "git", "rev-parse", "HEAD" }, system_opts):wait()
+  if hash_out.code ~= 0 then
+    return nil,
+      (
+        "Failed to get git hash:\n"
+        .. "stdout: "
+        .. (hash_out.stdout or "")
+        .. "\n"
+        .. "stderr: "
+        .. (hash_out.stderr or "")
+      )
+  end
+  local hash = vim.trim(hash_out.stdout)
+  local tag_out = vim.system({ "git", "describe", "--exact-match", hash }, system_opts):wait()
+  if tag_out.code ~= 0 then
+    return nil,
+      (
+        "Failed to get git tag:\n"
+        .. "stdout: "
+        .. (tag_out.stdout or "")
+        .. "\n"
+        .. "stderr: "
+        .. (tag_out.stderr or "")
+      )
+  end
+  return vim.trim(tag_out.stdout), nil
+end
 
 ---@module 'lazy.types'
 ---@type LazyPluginSpec[]
@@ -49,116 +98,115 @@ return {
   {
     -- [基于 jieba 的 Vim 按词跳转插件](https://github.com/kkew3/jieba.vim)
     "kkew3/jieba.vim",
-    -- version = "*",
+    version = "*",
     -- 禁止自动升级避免build出问题
-    tag = "v1.0.4",
+    -- tag = "v1.0.5",
+    event = "BufRead",
     enabled = not (vim.env.PREFIX and string.find(vim.env.PREFIX, "com.termux")),
-    -- plenary构建需要
-    dependencies = { "nvim-lua/plenary.nvim" },
     -- build = "./build.sh",
-    build = jit.os ~= "Windows" and "./build.sh"
-      or function(plugin)
-        -- NOTE: 在windows上如果已加载了插件再build会由于无法覆盖so,venv相关文件导致失败
-        local cargo_bin = vim.fn.exepath("cargo")
-        if not cargo_bin then
-          log_error("Not found rust cargo to build")
+    ---@module 'lazy'
+    ---@param plugin LazyPlugin
+    -- NOTE: 在windows上如果已加载了插件再build会由于无法覆盖so,venv相关文件导致失败
+    build = function(plugin)
+      local py_binname = vim.fs.basename(venv_py_bin)
+      if vim.fn.executable(py_binname) ~= 1 then
+        log_error("Not found " .. py_binname)
+        return
+      end
+      -- jieba so库目录
+      local pyd_path, pyd_tmp_path = get_pylib_path(plugin.dir)
+
+      local tag_name = plugin.tag
+      if not tag_name then
+        -- NOTE: tag可能为空时 url 失效
+        -- https://github.com/kkew3/jieba.vim/releases/download/v1.0.5/jieba_vim_rs-x86_64-pc-windows-msvc.dll
+        -- https://github.com/kkew3/jieba.vim/releases/latest/download/jieba_vim_rs-x86_64-pc-windows-msvc.dll
+        local tag, tag_err = get_git_tag(plugin)
+        if tag_err then
+          log_error(tag_err)
           return
         end
-        -- jieba so库目录
-        local build_dir = vim.fs.joinpath(plugin.dir, "pythonx")
-        local py_binname = vim.fs.basename(venv_py_bin)
+        tag_name = tag
+      end
+      local pat = string.lower(jit.arch .. "-" .. jit.os)
+      local url_filename = "/jieba_vim_rs-"
+      if pat == "x64-linux" then
+        url_filename = url_filename .. "x86_64-unknown-linux-gnu.so"
+      elseif pat == "x64-windows" then
+        url_filename = url_filename .. "x86_64-pc-windows-msvc.dll"
+      elseif pat == "arm64-linux" then
+        url_filename = url_filename .. "aarch64-unknown-linux-gnu.so"
+      else
+        log_error("Unsupported arch " .. pat)
+        return
+      end
 
-        local Job = require("plenary.job")
-        local build_args = { cargo_bin, "build", "-r" }
-        ---@diagnostic disable: missing-fields
-        local build_job = Job:new({
-          command = build_args[1],
-          args = { unpack(build_args, 2) },
-          cwd = build_dir,
-          enable_recording = true,
-          on_start = function()
-            vim.notify(
-              "Building " .. plugin.name .. " in " .. build_dir .. " with args: " .. table.concat(build_args, " "),
-              vim.log.levels.INFO
-            )
-          end,
-          on_exit = function(job, code)
-            if code ~= 0 then
-              log_error(
-                "Failed to build "
-                  .. plugin.name
-                  .. " with args="
-                  .. table.concat(build_args, " ")
-                  .. ", code="
-                  .. code
-                  .. ", stderr: "
-                  .. table.concat(job:stderr_result() or {}, "\n")
-              )
-            end
-          end,
-        })
+      local build_args = {
+        "curl",
+        "-fsSLo",
+        pyd_tmp_path,
+        "https://github.com/kkew3/jieba.vim/releases/download/" .. tag_name .. url_filename,
+      }
+      log_info("Building jieba.vim with args: " .. table.concat(build_args, " "))
+      local system_opts = { text = true, cwd = plugin.dir }
+      local build_out = vim.system(build_args, system_opts):wait()
+      if build_out.code ~= 0 then
+        log_error(
+          "Failed to building jieba:\n"
+            .. "stdout: "
+            .. (build_out.stdout or "")
+            .. "\n"
+            .. "stderr: "
+            .. (build_out.stderr or "")
+        )
+        return
+      end
+
+      if not vim.uv.fs_stat(venv_py_bin) then
         local create_venv_args = { vim.fn.exepath(py_binname) or py_binname, "-m", "venv", venv_home }
-        local venv_job = vim.fn.executable(venv_py_bin) == 1 and nil
-          or Job:new({
-            command = create_venv_args[1],
-            args = { unpack(create_venv_args, 2) },
-            on_start = function()
-              vim.notify(
-                "Creating python venv in " .. venv_home .. " with args: " .. table.concat(create_venv_args, " "),
-                vim.log.levels.INFO
-              )
-            end,
-            on_exit = function(job, code)
-              if code ~= 0 then
-                return vim.notify(
-                  "Failed to creating venv in "
-                    .. venv_home
-                    .. " with args="
-                    .. table.concat(create_venv_args, " ")
-                    .. ", code="
-                    .. code
-                    .. ", stderr: "
-                    .. table.concat(job:stderr_result() or {}, "\n"),
-                  vim.log.levels.ERROR
-                )
-              end
-            end,
-          })
-        local pip_inst_args = { venv_py_bin, "-m", "pip", "install", "pynvim" }
-        local pip_job = Job:new({
-          command = pip_inst_args[1],
-          args = { unpack(pip_inst_args, 2) },
-          on_start = function()
-            vim.notify("pip installing with args: " .. table.concat(pip_inst_args, " "), vim.log.levels.INFO)
-          end,
-          on_exit = function(job, code)
-            if code ~= 0 then
-              return vim.notify(
-                "Failed to installing pip packages with args="
-                  .. table.concat(create_venv_args, " ")
-                  .. ", code="
-                  .. code
-                  .. ", stderr: "
-                  .. table.concat(job:stderr_result() or {}, "\n")
-              )
-            end
-          end,
-        })
-        if venv_job then
-          venv_job:and_then_on_success_wrap(pip_job)
-        else
-          venv_job = pip_job
+        log_info("Creating python venv in " .. venv_home .. " with args: " .. table.concat(create_venv_args, " "))
+        local venv_out = vim.system(create_venv_args, { cwd = venv_home }):wait()
+        if venv_out.code ~= 0 then
+          log_error(
+            "Failed to create venv:\n"
+              .. "stdout: "
+              .. (venv_out.stdout or "")
+              .. "\n"
+              .. "stderr: "
+              .. (venv_out.stderr or "")
+          )
+          return
         end
-        build_job:and_then_on_success_wrap(venv_job)
-        build_job:start()
-      end,
+
+        local pip_inst_args = { venv_py_bin, "-m", "pip", "install", "pynvim" }
+        log_info("pip installing with args: " .. table.concat(pip_inst_args, " "))
+        local pip_inst_out = vim.system(pip_inst_args, { cwd = venv_home }):wait()
+        if pip_inst_out.code ~= 0 then
+          log_error(
+            "Failed to installing pip packages:\n"
+              .. "stdout: "
+              .. (venv_out.stdout or "")
+              .. "\n"
+              .. "stderr: "
+              .. (venv_out.stderr or "")
+          )
+          return
+        end
+      end
+
+      -- TODO: 移动tmp到Pyd，避免init时无法加载
+      -- 在加载前将 tmp 文件移动为实际 pyd 文件，避免加载后无法删除
+      log_info("Moving " .. pyd_tmp_path .. " to " .. pyd_path)
+      os.rename(pyd_tmp_path, pyd_path)
+      os.remove(pyd_tmp_path)
+    end,
     vscode = true,
-    init = function()
+    init = function(plugin)
       vim.g.jieba_vim_lazy = 1
       vim.g.jieba_vim_keymap = 1
 
-      if vim.fn.executable(venv_py_bin) ~= 1 then
-        vim.notify("Not found python venv bin in " .. venv_py_bin, vim.log.levels.WARN)
+      if not vim.uv.fs_stat(venv_py_bin) then
+        log_error("Not found python venv bin in " .. venv_py_bin)
       else
         vim.g.python3_host_prog = venv_py_bin
       end
