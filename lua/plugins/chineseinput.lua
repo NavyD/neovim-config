@@ -32,37 +32,96 @@ local function get_pylib_path(plugin_dir)
   return pyd_path, pyd_path_tmp
 end
 
+---@diagnostic disable: unused-function
 ---@param plugin LazyPlugin
----@return string|nil
----@return string|nil
-local function get_git_tag(plugin)
-  local system_opts = { text = true, cwd = plugin.dir }
-  local hash_out = vim.system({ "git", "rev-parse", "HEAD" }, system_opts):wait()
-  if hash_out.code ~= 0 then
-    return nil,
-      (
-        "Failed to get git hash:\n"
-        .. "stdout: "
-        .. (hash_out.stdout or "")
-        .. "\n"
-        .. "stderr: "
-        .. (hash_out.stderr or "")
-      )
+local function build_jieba_co(plugin)
+  local py_binname = vim.fs.basename(venv_py_bin)
+  if vim.fn.executable(py_binname) ~= 1 then
+    log_error("Not found " .. py_binname)
+    return
   end
-  local hash = vim.trim(hash_out.stdout)
-  local tag_out = vim.system({ "git", "describe", "--exact-match", hash }, system_opts):wait()
-  if tag_out.code ~= 0 then
-    return nil,
-      (
-        "Failed to get git tag:\n"
-        .. "stdout: "
-        .. (tag_out.stdout or "")
-        .. "\n"
-        .. "stderr: "
-        .. (tag_out.stderr or "")
-      )
+
+  -- jieba so库目录
+  local pylib_path, pylib_tmp_path = get_pylib_path(plugin.dir)
+
+  local git = require("utils.git")
+  local tag_name = plugin.tag
+  if not tag_name then
+    local tag, tag_err = git.get_tag_co(plugin.dir)
+    if not tag then
+      log_error("Failed to get tag: " .. (tag_err or ""))
+      return
+    end
+    tag_name = tag
   end
-  return vim.trim(tag_out.stdout), nil
+
+  local pat = string.lower(jit.arch .. "-" .. jit.os)
+  local url_filename = "/jieba_vim_rs-"
+  if pat == "x64-linux" then
+    url_filename = url_filename .. "x86_64-unknown-linux-gnu.so"
+  elseif pat == "x64-windows" then
+    url_filename = url_filename .. "x86_64-pc-windows-msvc.dll"
+  elseif pat == "arm64-linux" then
+    url_filename = url_filename .. "aarch64-unknown-linux-gnu.so"
+  else
+    log_error("Unsupported arch " .. pat)
+    return
+  end
+
+  local nio_proc = require("nio").process
+  local build_args = {
+    "curl",
+    "-fsSLo",
+    pylib_tmp_path,
+    "https://github.com/kkew3/jieba.vim/releases/download/" .. tag_name .. url_filename,
+  }
+  log_info("Building jieba.vim with args: " .. table.concat(build_args, " "))
+  local curl_proc, curl_err = nio_proc.run({
+    cmd = build_args[1],
+    args = { unpack(build_args, 2) },
+  })
+  if not curl_proc then
+    log_error("Failed to run `" .. table.concat(build_args, " ") .. "`: " .. (curl_err or ""))
+    return
+  end
+  if curl_proc.result(false) ~= 0 then
+    log_error("Failed to curl:\n" .. "stderr: " .. (curl_proc.stderr.read() or ""))
+    return
+  end
+
+  if not vim.uv.fs_stat(venv_py_bin) then
+    local create_venv_args = { vim.fn.exepath(py_binname) or py_binname, "-m", "venv", venv_home }
+    log_info("Creating python venv in " .. venv_home .. " with args: " .. table.concat(create_venv_args, " "))
+    local venv_proc, venv_err =
+      nio_proc.run({ cmd = create_venv_args[1], args = { unpack(create_venv_args, 2), cwd = vim.fs.dir(venv_home) } })
+    if not venv_proc then
+      log_error("Failed to run `" .. table.concat(create_venv_args, " ") .. "`: " .. (venv_err or ""))
+      return
+    end
+    if venv_proc.result(false) ~= 0 then
+      log_error("Failed to creating venv:\n" .. "stderr: " .. (curl_proc.stderr.read() or ""))
+      return
+    end
+
+    local pip_inst_args = { venv_py_bin, "-m", "pip", "install", "pynvim" }
+    log_info("pip installing with args: " .. table.concat(pip_inst_args, " "))
+    local pip_proc, pip_err =
+      nio_proc.run({ cmd = pip_inst_args[1], args = { unpack(pip_inst_args, 2) }, cwd = venv_home })
+    if not pip_proc then
+      log_error("Failed to run `" .. table.concat(pip_inst_args, "") .. ": " .. (pip_err or ""))
+      return
+    end
+    if pip_proc.result(false) ~= 0 then
+      log_error("Failed to installing pip packages:\n" .. "stderr: " .. (pip_proc.stderr.read() or ""))
+      return
+    end
+  end
+
+  -- TODO: 移动tmp到Pyd，避免init时无法加载
+  -- 在加载前将 tmp 文件移动为实际 pyd 文件，避免加载后无法删除
+  log_info("Moving " .. pylib_tmp_path .. " to " .. pylib_path)
+  os.rename(pylib_tmp_path, pylib_path)
+  os.remove(pylib_tmp_path)
 end
 
 ---@module 'lazy.types'
@@ -103,113 +162,29 @@ return {
     -- tag = "v1.0.5",
     event = "BufRead",
     enabled = not (vim.env.PREFIX and string.find(vim.env.PREFIX, "com.termux")),
-    -- build = "./build.sh",
+    ---@type LazySpec[]
+    dependencies = {
+      -- https://github.com/nvim-neotest/nvim-nio
+      { "nvim-neotest/nvim-nio" },
+    },
     ---@module 'lazy'
     ---@param plugin LazyPlugin
     -- NOTE: 在windows上如果已加载了插件再build会由于无法覆盖so,venv相关文件导致失败
     build = function(plugin)
-      local py_binname = vim.fs.basename(venv_py_bin)
-      if vim.fn.executable(py_binname) ~= 1 then
-        log_error("Not found " .. py_binname)
-        return
-      end
-      -- jieba so库目录
-      local pyd_path, pyd_tmp_path = get_pylib_path(plugin.dir)
-
-      local tag_name = plugin.tag
-      if not tag_name then
-        -- NOTE: tag可能为空时 url 失效
-        -- https://github.com/kkew3/jieba.vim/releases/download/v1.0.5/jieba_vim_rs-x86_64-pc-windows-msvc.dll
-        -- https://github.com/kkew3/jieba.vim/releases/latest/download/jieba_vim_rs-x86_64-pc-windows-msvc.dll
-        local tag, tag_err = get_git_tag(plugin)
-        if tag_err then
-          log_error(tag_err)
-          return
-        end
-        tag_name = tag
-      end
-      local pat = string.lower(jit.arch .. "-" .. jit.os)
-      local url_filename = "/jieba_vim_rs-"
-      if pat == "x64-linux" then
-        url_filename = url_filename .. "x86_64-unknown-linux-gnu.so"
-      elseif pat == "x64-windows" then
-        url_filename = url_filename .. "x86_64-pc-windows-msvc.dll"
-      elseif pat == "arm64-linux" then
-        url_filename = url_filename .. "aarch64-unknown-linux-gnu.so"
-      else
-        log_error("Unsupported arch " .. pat)
-        return
-      end
-
-      local build_args = {
-        "curl",
-        "-fsSLo",
-        pyd_tmp_path,
-        "https://github.com/kkew3/jieba.vim/releases/download/" .. tag_name .. url_filename,
-      }
-      log_info("Building jieba.vim with args: " .. table.concat(build_args, " "))
-      local system_opts = { text = true, cwd = plugin.dir }
-      local build_out = vim.system(build_args, system_opts):wait()
-      if build_out.code ~= 0 then
-        log_error(
-          "Failed to building jieba:\n"
-            .. "stdout: "
-            .. (build_out.stdout or "")
-            .. "\n"
-            .. "stderr: "
-            .. (build_out.stderr or "")
-        )
-        return
-      end
-
-      if not vim.uv.fs_stat(venv_py_bin) then
-        local create_venv_args = { vim.fn.exepath(py_binname) or py_binname, "-m", "venv", venv_home }
-        log_info("Creating python venv in " .. venv_home .. " with args: " .. table.concat(create_venv_args, " "))
-        local venv_out = vim.system(create_venv_args, { cwd = venv_home }):wait()
-        if venv_out.code ~= 0 then
-          log_error(
-            "Failed to create venv:\n"
-              .. "stdout: "
-              .. (venv_out.stdout or "")
-              .. "\n"
-              .. "stderr: "
-              .. (venv_out.stderr or "")
-          )
-          return
-        end
-
-        local pip_inst_args = { venv_py_bin, "-m", "pip", "install", "pynvim" }
-        log_info("pip installing with args: " .. table.concat(pip_inst_args, " "))
-        local pip_inst_out = vim.system(pip_inst_args, { cwd = venv_home }):wait()
-        if pip_inst_out.code ~= 0 then
-          log_error(
-            "Failed to installing pip packages:\n"
-              .. "stdout: "
-              .. (venv_out.stdout or "")
-              .. "\n"
-              .. "stderr: "
-              .. (venv_out.stderr or "")
-          )
-          return
-        end
-      end
-
-      -- TODO: 移动tmp到Pyd，避免init时无法加载
-      -- 在加载前将 tmp 文件移动为实际 pyd 文件，避免加载后无法删除
-      log_info("Moving " .. pyd_tmp_path .. " to " .. pyd_path)
-      os.rename(pyd_tmp_path, pyd_path)
-      os.remove(pyd_tmp_path)
+      require("nio").run(function()
+        build_jieba_co(plugin)
+      end)
     end,
     vscode = true,
     init = function(plugin)
+      if not vim.uv.fs_stat(venv_py_bin) then
+        log_error("Not found python venv bin in " .. venv_py_bin .. " for plugin " .. plugin.name)
+        return
+      end
+      vim.g.python3_host_prog = venv_py_bin
+
       vim.g.jieba_vim_lazy = 1
       vim.g.jieba_vim_keymap = 1
-
-      if not vim.uv.fs_stat(venv_py_bin) then
-        log_error("Not found python venv bin in " .. venv_py_bin)
-      else
-        vim.g.python3_host_prog = venv_py_bin
-      end
     end,
   },
 }
