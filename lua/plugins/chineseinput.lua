@@ -68,7 +68,6 @@ local function build_jieba_co(plugin)
     return
   end
 
-  local nio_proc = require("nio").process
   local build_args = {
     "curl",
     "-fsSLo",
@@ -76,43 +75,27 @@ local function build_jieba_co(plugin)
     "https://github.com/kkew3/jieba.vim/releases/download/" .. tag_name .. url_filename,
   }
   log_info("Building jieba.vim with args: " .. table.concat(build_args, " "))
-  local curl_proc, curl_err = nio_proc.run({
-    cmd = build_args[1],
-    args = { unpack(build_args, 2) },
-  })
-  if not curl_proc then
-    log_error("Failed to run `" .. table.concat(build_args, " ") .. "`: " .. (curl_err or ""))
-    return
-  end
-  if curl_proc.result(false) ~= 0 then
-    log_error("Failed to curl:\n" .. "stderr: " .. (curl_proc.stderr.read() or ""))
+  local process = require("utils.process")
+  local curl_sc = process.run_co(build_args)
+  if curl_sc.code ~= 0 then
+    log_error("Failed to run `" .. table.concat(build_args, " ") .. "`: " .. (curl_sc.stderr or ""))
     return
   end
 
   if not vim.uv.fs_stat(venv_py_bin) then
     local create_venv_args = { vim.fn.exepath(py_binname) or py_binname, "-m", "venv", venv_home }
     log_info("Creating python venv in " .. venv_home .. " with args: " .. table.concat(create_venv_args, " "))
-    local venv_proc, venv_err =
-      nio_proc.run({ cmd = create_venv_args[1], args = { unpack(create_venv_args, 2), cwd = vim.fs.dir(venv_home) } })
-    if not venv_proc then
+    local venv_sc, venv_err = process.run_co(create_venv_args)
+    if venv_sc.code ~= 0 then
       log_error("Failed to run `" .. table.concat(create_venv_args, " ") .. "`: " .. (venv_err or ""))
-      return
-    end
-    if venv_proc.result(false) ~= 0 then
-      log_error("Failed to creating venv:\n" .. "stderr: " .. (curl_proc.stderr.read() or ""))
       return
     end
 
     local pip_inst_args = { venv_py_bin, "-m", "pip", "install", "pynvim" }
     log_info("pip installing with args: " .. table.concat(pip_inst_args, " "))
-    local pip_proc, pip_err =
-      nio_proc.run({ cmd = pip_inst_args[1], args = { unpack(pip_inst_args, 2) }, cwd = venv_home })
-    if not pip_proc then
+    local pip_sc, pip_err = process.run_co(pip_inst_args)
+    if pip_sc.code ~= 0 then
       log_error("Failed to run `" .. table.concat(pip_inst_args, "") .. ": " .. (pip_err or ""))
-      return
-    end
-    if pip_proc.result(false) ~= 0 then
-      log_error("Failed to installing pip packages:\n" .. "stderr: " .. (pip_proc.stderr.read() or ""))
       return
     end
   end
