@@ -51,7 +51,6 @@ return {
       -- vim.opt.sidescrolloff = 36 -- Set a large value
 
       --- Put your configuration here
-      ---@type Neominimap.UserConfig
       vim.g.neominimap = {
         -- 默认禁用
         auto_enable = false,

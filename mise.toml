@@ -1,0 +1,25 @@
+[tools]
+lua-language-server = "latest"
+typos = "1.29"
+lefthook = "1.11"
+taplo = "0.9"
+gitleaks = '8.23'
+python = "3.11"
+"pipx:pre-commit-hooks" = "5"
+"pipx:commitizen" = "4"
+yamllint = '1.35'
+actionlint = '1.7'
+
+[settings]
+windows_default_inline_shell_args = "powershell -NoProfile -NoLogo -Command"
+
+[vars]
+lua_ls_json_path = '{{[xdg_cache_home, ".nvim.luarc.jsonc"] | join_path}}'
+
+[tasks.lint]
+run = '''
+# 生成 lua_ls 配置用于 lint 检查
+nvim --clean --headless -l .nvim.luarc.lua '{{vars.lua_ls_json_path}}'
+lua-language-server --check lua/plugins/example.lua --configpath '{{vars.lua_ls_json_path}}'
+'''
+

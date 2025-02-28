@@ -20,11 +20,13 @@ return {
       },
     },
     config = function(_, opts)
+      ---@diagnostic disable-next-line: redundant-parameter
       require("tmux").setup(opts)
       if vim.env.TMUX then
         LazyVim.on_load("which-key.nvim", function()
           local reg = require("which-key.plugins.registers")
           local expand = reg.expand
+          ---@diagnostic disable-next-line: duplicate-set-field
           function reg.expand()
             require("tmux.copy").sync_registers()
             return expand()
@@ -35,6 +37,7 @@ return {
           LazyVim.on_load("yanky.nvim", function()
             local yanky = require("yanky")
             local put = yanky.put
+            ---@diagnostic disable-next-line: duplicate-set-field
             function yanky.put(type, is_visual, callback)
               require("tmux.copy").sync_registers()
               return put(type, is_visual, callback)
