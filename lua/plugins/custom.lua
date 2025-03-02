@@ -24,20 +24,23 @@ return {
   },
   {
     "nvim-treesitter/nvim-treesitter",
-    -- 扩展默认的配置参考 https://www.lazyvim.org/configuration/plugins#%EF%B8%8F-customizing-plugin-specs
-    -- opts是由之前定义的table，可以配置func修改添加新的
     ---@module 'nvim-treesitter'
-    ---@param opts TSConfig
-    opts = function(_, opts)
-      local new_installeds = { "powershell", "gotmpl" }
-      local installed = opts.ensure_installed
-      if type(installed) == "table" then
-        vim.list_extend(installed, new_installeds)
-      else
-        table.insert(new_installeds, installed)
-        opts.ensure_installed = new_installeds
-      end
-    end,
+    ---@type TSConfig
+    ---@diagnostic disable-next-line: missing-fields
+    opts = {
+      -- https://github.com/nvim-treesitter/nvim-treesitter#supported-languages
+      ensure_installed = {
+        "powershell",
+        "gotmpl",
+        "ssh_config",
+        "nginx",
+        "properties",
+        "csv",
+        "jinja",
+        "jinja_inline",
+        "ini",
+      },
+    },
   },
   {
     "nvim-treesitter/nvim-treesitter",
@@ -56,5 +59,27 @@ return {
         },
       },
     },
+  },
+  {
+    "williamboman/mason.nvim",
+    opts = function(_, opts)
+      local new_installeds = {
+        -- [A CLI tool for code structural search, lint and rewriting](https://github.com/ast-grep/ast-grep)
+        "ast-grep",
+        "shellcheck",
+        "shfmt",
+        "actionlint",
+        "typos-lsp",
+      }
+      if vim.fn.executable("pwsh") == 1 then
+        -- 仅在存在 pwsh 时才会运行 pwsh 启动 LSP 服务
+        vim.list_extend(new_installeds, { "powershell-editor-services" })
+      end
+      if vim.fn.executable("cargo") == 1 then
+        -- 使用 mason 提供的最新版本
+        vim.list_extend(new_installeds, { "rust-analyzer" })
+      end
+      opts.ensure_installed = vim.list_extend(opts.ensure_installed or {}, new_installeds)
+    end,
   },
 }
