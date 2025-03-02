@@ -19,6 +19,9 @@ if type(data_dir) == "table" then
 end
 local venv_home = vim.fs.joinpath(data_dir, ".venv")
 local venv_py_bin = vim.fs.joinpath(venv_home, jit.os == "Windows" and "Scripts/python.exe" or "bin/python3")
+local py_binname = vim.fs.basename(venv_py_bin)
+-- fix: Vimscript function must not be called in a lua loop callback
+local py_bin = vim.fn.exepath(py_binname) or py_binname
 
 ---@param plugin_dir string
 ---@return string
@@ -35,7 +38,6 @@ end
 ---@diagnostic disable: unused-function
 ---@param plugin LazyPlugin
 local function build_jieba_co(plugin)
-  local py_binname = vim.fs.basename(venv_py_bin)
   if vim.fn.executable(py_binname) ~= 1 then
     log_error("Not found " .. py_binname)
     return
@@ -83,7 +85,7 @@ local function build_jieba_co(plugin)
   end
 
   if not vim.uv.fs_stat(venv_py_bin) then
-    local create_venv_args = { vim.fn.exepath(py_binname) or py_binname, "-m", "venv", venv_home }
+    local create_venv_args = { py_bin, "-m", "venv", venv_home }
     log_info("Creating python venv in " .. venv_home .. " with args: " .. table.concat(create_venv_args, " "))
     local venv_sc, venv_err = process.run_co(create_venv_args)
     if venv_sc.code ~= 0 then
@@ -144,7 +146,7 @@ return {
     -- 禁止自动升级避免build出问题
     -- tag = "v1.0.5",
     event = "BufRead",
-    enabled = not (vim.env.PREFIX and string.find(vim.env.PREFIX, "com.termux")),
+    enabled = vim.fn.executable(py_bin) == 1 and not (vim.env.PREFIX and string.find(vim.env.PREFIX, "com.termux")),
     ---@type LazySpec[]
     dependencies = {
       -- https://github.com/nvim-neotest/nvim-nio
