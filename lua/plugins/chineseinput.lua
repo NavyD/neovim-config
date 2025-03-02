@@ -123,13 +123,13 @@ return {
 
       -- NOTE: vscode 中保存时不会触发事件 BufWritePre，使用 bufwritecmd 在`:w`时触发
       -- 不能同时使用，否则会导致在 nvim 中保存 md 文档时一直无法保存
-      vim.api.nvim_create_autocmd(vim.g.vscode and "BufWriteCmd" or "BufWritePre", {
-        pattern = { "*.md", "*.markdown", "*.txt" },
-        callback = function()
-          vim.cmd([[ PanguAll ]])
-          vim.notify("Formatted with Pangu", vim.log.levels.INFO)
-        end,
-      })
+      -- vim.api.nvim_create_autocmd(vim.g.vscode and "BufWriteCmd" or "BufWritePre", {
+      --   pattern = { "*.md", "*.markdown", "*.txt" },
+      --   callback = function()
+      --     vim.cmd([[ PanguAll ]])
+      --     vim.notify("Formatted with Pangu", vim.log.levels.INFO)
+      --   end,
+      -- })
     end,
     keys = {
       { "<leader>cg", "<CMD>Pangu<CR>", mode = "n", desc = "Format current line with Pangu" },
