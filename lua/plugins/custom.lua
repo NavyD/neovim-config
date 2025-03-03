@@ -82,4 +82,18 @@ return {
       opts.ensure_installed = vim.list_extend(opts.ensure_installed or {}, new_installeds)
     end,
   },
+  {
+    "folke/snacks.nvim",
+    keys = {
+      -- https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#zoxide
+      {
+        "<leader>fz",
+        function()
+          Snacks.picker.zoxide()
+        end,
+        mode = { "n", "x" },
+        desc = "Zoxide",
+      },
+    },
+  },
 }
