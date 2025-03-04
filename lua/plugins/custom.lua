@@ -1,15 +1,3 @@
--- 在 uv 项目中返回 PATH 中的 python 路径，否则返回 nil
----@return string|nil
-local function get_py_binpath()
-  if vim.uv.fs_stat("pyproject.toml") and vim.uv.fs_stat("uv.lock") then
-    local py_bin = vim.fn.exepath("python")
-    if py_bin ~= "" then
-      return py_bin
-    end
-  end
-  return nil
-end
-
 ---@type LazyPluginSpec[]
 return {
   -- { "folke/noice.nvim", cond = not (vim.g.neovide or false) },
@@ -105,22 +93,6 @@ return {
         end,
         mode = { "n", "x" },
         desc = "Zoxide",
-      },
-    },
-  },
-  {
-    "nvim-neotest/neotest",
-    opts = {
-      adapters = {
-        -- https://github.com/nvim-neotest/neotest-python
-        ---@module 'neotest-python'
-        ---@type neotest-python.AdapterConfig
-        ["neotest-python"] = {
-          runner = "pytest",
-          -- If not provided, the path will be inferred by checking for
-          -- virtual envs in the local directory and for Pipenev/Poetry configs
-          python = get_py_binpath(),
-        },
       },
     },
   },

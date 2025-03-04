@@ -11,6 +11,10 @@ vim.g.autoformat = false
 -- -- then you need to set the option below.
 vim.g.lazyvim_picker = "snacks"
 
+-- [How do I configure basedpyright? #3350](https://github.com/LazyVim/LazyVim/discussions/3350#discussioncomment-9865324)
+-- https://github.com/LazyVim/LazyVim/blob/ec5981dfb1222c3bf246d9bcaa713d5cfa486fbd/lua/lazyvim/plugins/extras/lang/python.lua#L72
+vim.g.lazyvim_python_lsp = "basedpyright"
+
 -- fix: 在windows上无HOME变量导致nil连接str出错
 -- lazy/LazyVim/lua/lazyvim/plugins/extras/util/chezmoi.lua:60: attempt to concatenate a nil value
 -- lazy/LazyVim/lua/lazyvim/plugins/extras/util/chezmoi.lua:31: attempt to concatenate a nil value
