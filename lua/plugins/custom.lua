@@ -15,8 +15,43 @@ return {
       },
     },
   },
-  -- 禁用init 避免在打开cz文件时卡顿
-  { "xvzc/chezmoi.nvim", enabled = true, init = function() end },
+  {
+    "xvzc/chezmoi.nvim",
+    enabled = true,
+    dependencies = {
+      { "nvim-neotest/nvim-nio" },
+    },
+    init = function()
+      require("nio").run(function()
+        -- 获取 cz 实际的源目录
+        local cz_src_sc = require("utils.process").run_co({ "chezmoi", "source-path" }, { text = true })
+        -- fix: 在windows上无HOME变量导致nil连接str出错
+        local sc_src_path =
+          vim.fs.joinpath(os.getenv(jit.os == "Windows" and "USERPROFILE" or "HOME"), ".local/share/chezmoi")
+        if cz_src_sc.code ~= 0 then
+          vim.notify(
+            "Fallback chezmoi source path to " .. sc_src_path .. " by error: " .. (cz_src_sc.stderr or ""),
+            vim.log.levels.WARN
+          )
+        else
+          sc_src_path = vim.trim(cz_src_sc.stdout)
+          -- vim.notify("Got chezmoi source path " .. sc_src_path .. " in " .. vim.uv.cwd(), vim.log.levels.INFO)
+        end
+        vim.schedule(function()
+          vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
+            pattern = { vim.fs.joinpath(sc_src_path, "*") },
+            callback = function(ev)
+              local bufnr = ev.buf
+              local edit_watch = function()
+                require("chezmoi.commands.__edit").watch(bufnr)
+              end
+              vim.schedule(edit_watch)
+            end,
+          })
+        end)
+      end)
+    end,
+  },
   {
     "gbprod/yanky.nvim",
     -- 在termux中无效且可能会在打开文件时阻塞 禁止加载
