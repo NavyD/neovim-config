@@ -31,13 +31,33 @@ return {
       })
     end,
   },
-  -- {
-  --   "OXY2DEV/markview.nvim",
-  --   lazy = false, -- Recommended
-  --   ft = { "markdown", "codecompanion", "Avante" }, -- If you decide to lazy-load anyway
-  --   dependencies = {
-  --     "nvim-treesitter/nvim-treesitter",
-  --     "nvim-tree/nvim-web-devicons",
-  --   },
-  -- },
+  { "MeanderingProgrammer/render-markdown.nvim", enabled = false },
+  {
+    -- https://github.com/OXY2DEV/markview.nvim
+    "OXY2DEV/markview.nvim",
+    version = "*",
+    lazy = false, -- Recommended
+    ft = { "markdown", "codecompanion", "Avante" }, -- If you decide to lazy-load anyway
+    dependencies = {
+      {
+        "echasnovski/mini.icons",
+        opts = {
+          ensure_installed = {
+            "markdown",
+            "markdown_inline",
+            "html",
+            "latex",
+            "typst",
+            "yaml",
+          },
+        },
+      },
+      "nvim-tree/nvim-web-devicons",
+    },
+    jit.os ~= "Windows" and {} or {
+      -- On windows, you might need tree-sitter CLI for the latex parser
+      "williamboman/mason.nvim",
+      opts = { ensure_installed = { "tree-sitter-cli" } },
+    },
+  },
 }
