@@ -129,16 +129,16 @@ return {
       -- FIXME: Tried to link bin "tree-sitter" to non-existent target "tree-sitter-windows-x64.exe".
       -- [Failed to install tree-sitter-cli on windows #7020](https://github.com/mason-org/mason-registry/issues/7020)
       -- [Requirements](https://github.com/OXY2DEV/markview.nvim#-requirements)
-      -- jit.os ~= "Windows" and {} or {
-      --   -- On windows, you might need tree-sitter CLI for the latex parser
-      --   "williamboman/mason.nvim",
-      --   optional = true,
-      --   ---@module 'mason'
-      --   ---@type MasonSettings
-      --   opts = {
-      --     ensure_installed = { "tree-sitter-cli" },
-      --   },
-      -- },
+      {
+        -- On windows/linux, you might need tree-sitter CLI for the latex parser
+        "williamboman/mason.nvim",
+        optional = true,
+        ---@module 'mason'
+        ---@type MasonSettings
+        opts = {
+          ensure_installed = { "tree-sitter-cli" },
+        },
+      },
     },
     ---@module 'markview'
     ---@type mkv.config
