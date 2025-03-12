@@ -92,10 +92,16 @@ return {
       if not opts.formatters_by_ft.markdown then
         opts.formatters_by_ft.markdown = {}
       end
+
+      local markdown_fmts = { "injected" }
+      -- [A linter and formatter to help you to improve copywriting, correct spaces, words, and punctuations between CJK (Chinese, Japanese, Korean)](https://github.com/huacnlee/autocorrect)
+      if vim.fn.executable("autocorrect") == 1 then
+        table.insert(markdown_fmts, "autocorrect")
+      end
       -- [conform.nvim: Injected language formatting (code blocks)](https://github.com/stevearc/conform.nvim/blob/master/doc/advanced_topics.md#injected-language-formatting-code-blocks)
       -- [injected](https://github.com/stevearc/conform.nvim/blob/master/doc/formatter_options.md#injected)
       ---@diagnostic disable-next-line: param-type-mismatch
-      vim.list_extend(opts.formatters_by_ft.markdown, { "injected" })
+      vim.list_extend(opts.formatters_by_ft.markdown, markdown_fmts)
     end,
   },
   { "MeanderingProgrammer/render-markdown.nvim", enabled = false },
