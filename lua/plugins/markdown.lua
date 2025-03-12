@@ -107,6 +107,19 @@ return {
     -- https://github.com/LazyVim/LazyVim/blob/ec5981dfb1222c3bf246d9bcaa713d5cfa486fbd/lua/lazyvim/plugins/extras/lang/markdown.lua#L111C12-L111C61
     ft = { "markdown", "norg", "rmd", "org", "codecompanion" }, -- If you decide to lazy-load anyway
     dependencies = {
+      -- FIXME: Tried to link bin "tree-sitter" to non-existent target "tree-sitter-windows-x64.exe".
+      -- [Failed to install tree-sitter-cli on windows #7020](https://github.com/mason-org/mason-registry/issues/7020)
+      -- [Requirements](https://github.com/OXY2DEV/markview.nvim#-requirements)
+      {
+        -- On windows/linux, you might need tree-sitter CLI for the latex parser
+        "williamboman/mason.nvim",
+        optional = true,
+        ---@module 'mason'
+        ---@type MasonSettings
+        opts = {
+          ensure_installed = { "tree-sitter-cli" },
+        },
+      },
       {
         "nvim-treesitter/nvim-treesitter",
         -- https://github.com/nvim-treesitter/nvim-treesitter/blob/master/lua/nvim-treesitter/configs.lua
@@ -126,19 +139,6 @@ return {
         optional = true,
       },
       { "echasnovski/mini.icons" },
-      -- FIXME: Tried to link bin "tree-sitter" to non-existent target "tree-sitter-windows-x64.exe".
-      -- [Failed to install tree-sitter-cli on windows #7020](https://github.com/mason-org/mason-registry/issues/7020)
-      -- [Requirements](https://github.com/OXY2DEV/markview.nvim#-requirements)
-      {
-        -- On windows/linux, you might need tree-sitter CLI for the latex parser
-        "williamboman/mason.nvim",
-        optional = true,
-        ---@module 'mason'
-        ---@type MasonSettings
-        opts = {
-          ensure_installed = { "tree-sitter-cli" },
-        },
-      },
     },
     ---@module 'markview'
     ---@type mkv.config
