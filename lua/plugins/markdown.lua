@@ -92,16 +92,18 @@ return {
       if not opts.formatters_by_ft.markdown then
         opts.formatters_by_ft.markdown = {}
       end
+      local markdown_fmts = opts.formatters_by_ft.markdown
+      ---@cast markdown_fmts string[]
 
-      local markdown_fmts = { "injected" }
       -- [A linter and formatter to help you to improve copywriting, correct spaces, words, and punctuations between CJK (Chinese, Japanese, Korean)](https://github.com/huacnlee/autocorrect)
       if vim.fn.executable("autocorrect") == 1 then
-        table.insert(markdown_fmts, "autocorrect")
+        -- 放在最后会导致多出一个空行，需要额外移除空行，放在第 1 个会被后面的 formatter 覆盖
+        table.insert(markdown_fmts, 1, "autocorrect")
+        -- table.insert(markdown_fmts, "trim_newlines")
       end
       -- [conform.nvim: Injected language formatting (code blocks)](https://github.com/stevearc/conform.nvim/blob/master/doc/advanced_topics.md#injected-language-formatting-code-blocks)
       -- [injected](https://github.com/stevearc/conform.nvim/blob/master/doc/formatter_options.md#injected)
-      ---@diagnostic disable-next-line: param-type-mismatch
-      vim.list_extend(opts.formatters_by_ft.markdown, markdown_fmts)
+      table.insert(markdown_fmts, "injected")
     end,
   },
   { "MeanderingProgrammer/render-markdown.nvim", enabled = false },
@@ -153,11 +155,12 @@ return {
         -- [linewise_hybrid_mode](https://github.com/OXY2DEV/markview.nvim/wiki/Preview-options#linewise_hybrid_mode)
         enable = true,
         -- debounce = 50,
+        -- modes = { "n", "i", "nc", "c", "v", "s" },
         -- 使用混合模式[hybrid_modes](https://github.com/OXY2DEV/markview.nvim/wiki/Preview-options#hybrid_modes)
         hybrid_modes = { "n", "i", "nc", "c", "v", "s" },
         -- hybrid_modes = { "i", "c", "v", "s" },
         enable_hybrid_mode = true,
-        -- linewise_hybrid_mode = true,
+        linewise_hybrid_mode = true,
       },
       ---@diagnostic disable-next-line: missing-fields
       markdown = {
