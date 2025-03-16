@@ -119,6 +119,46 @@ return {
   },
   {
     "folke/snacks.nvim",
+    ---@type snacks.Config
+    opts = {
+      picker = {
+        sources = {
+          -- https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#files
+          ---@type snacks.picker.files.Config
+          ---@diagnostic disable-next-line: missing-fields
+          files = {
+            -- 默认显示隐藏文件
+            hidden = true,
+            ignored = false,
+          },
+          ---@type snacks.picker.explorer.Config
+          ---@diagnostic disable-next-line: missing-fields
+          explorer = {
+            -- 默认显示隐藏文件
+            hidden = true,
+            ignored = false,
+          },
+          -- https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#notifications
+          ---@type snacks.picker.notifications.Config
+          ---@diagnostic disable-next-line: missing-fields
+          notifications = {
+            win = {
+              preview = {
+                wo = {
+                  -- 查看通知的preview避免隐藏超出列长的部分
+                  -- notifications 预览应该 wrap 避免无法查看全部或 item 被wrap
+                  -- NOTE: 聚焦到 preview 上使用 `<a-w>`
+                  -- 参考 [How to scroll preview panel in git log? #5523](https://github.com/LazyVim/LazyVim/discussions/5523#discussioncomment-12060745)
+                  -- https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#snackspickeractionscycle_win
+                  -- https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#%EF%B8%8F-config
+                  wrap = true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     keys = {
       -- https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#zoxide
       {
