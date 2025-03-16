@@ -7,10 +7,6 @@
 -- [Disable autoformat for some buffers](https://www.lazyvim.org/configuration/tips#disable-autoformat-for-some-buffers)
 vim.g.autoformat = false
 
--- In case you don't want to use `:LazyExtras`,
--- -- then you need to set the option below.
-vim.g.lazyvim_picker = "snacks"
-
 -- [How do I configure basedpyright? #3350](https://github.com/LazyVim/LazyVim/discussions/3350#discussioncomment-9865324)
 -- https://github.com/LazyVim/LazyVim/blob/ec5981dfb1222c3bf246d9bcaa713d5cfa486fbd/lua/lazyvim/plugins/extras/lang/python.lua#L72
 vim.g.lazyvim_python_lsp = "basedpyright"

@@ -113,33 +113,6 @@ end
 ---@type LazyPluginSpec[]
 return {
   {
-    -- [『盘古之白』中文排版自动规范化的 vim 插件](https://github.com/hotoo/pangu.vim)
-    "hotoo/pangu.vim",
-    lazy = true,
-    event = "BufRead",
-    vscode = true,
-    config = function()
-      -- 参考：https://github.com/hotoo/pangu.vim/blob/master/plugin/pangu.vim
-      -- 日期两端不留白：我在2017年8月7日生日
-      vim.g.pangu_rule_date = 0
-
-      -- NOTE: vscode 中保存时不会触发事件 BufWritePre，使用 bufwritecmd 在`:w`时触发
-      -- 不能同时使用，否则会导致在 nvim 中保存 md 文档时一直无法保存
-      -- vim.api.nvim_create_autocmd(vim.g.vscode and "BufWriteCmd" or "BufWritePre", {
-      --   pattern = { "*.md", "*.markdown", "*.txt" },
-      --   callback = function()
-      --     vim.cmd([[ PanguAll ]])
-      --     vim.notify("Formatted with Pangu", vim.log.levels.INFO)
-      --   end,
-      -- })
-    end,
-    keys = {
-      { "<leader>cg", "<CMD>Pangu<CR>", mode = "n", desc = "Format current line with Pangu" },
-      -- NOTE: 选中会格式化所有行而不是区域
-      { "<leader>cg", ":'<,'>Pangu<CR>", mode = "v", desc = "Format selection lines with Pangu" },
-    },
-  },
-  {
     -- [基于 jieba 的 Vim 按词跳转插件](https://github.com/kkew3/jieba.vim)
     "kkew3/jieba.vim",
     version = "*",
