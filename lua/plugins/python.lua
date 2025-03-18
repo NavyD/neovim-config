@@ -48,9 +48,26 @@ return {
     keys = { { "<leader>cv", "<cmd>:VenvSelect<cr>", desc = "Select VirtualEnv", ft = "python" } },
   },
   {
+    "mfussenegger/nvim-lint",
+    optional = true,
+    opts = {
+      -- https://github.com/mfussenegger/nvim-lint/blob/master/lua/lint/linters/dmypy.lua
+      -- https://github.com/mfussenegger/nvim-lint#available-linters
+      -- NOTE: 不使用 mason 安装 mypy 是因为通常 mypy 会被当前 py 项目安装
+      linters_by_ft = {
+        -- 使用 dmypy 代替 mypy 加速大型项目检查
+        -- https://mypy.readthedocs.io/en/stable/mypy_daemon.html
+        python = { "dmypy" },
+      },
+    },
+  },
+  {
     -- [How do I configure basedpyright? #3350](https://github.com/LazyVim/LazyVim/discussions/3350#discussioncomment-9584437)
     "neovim/nvim-lspconfig",
     opts = {
+      ---@module "lspconfig.configs"
+      ---@type lspconfig.options
+      ---@diagnostic disable: missing-fields
       servers = {
         basedpyright = {
           settings = {
