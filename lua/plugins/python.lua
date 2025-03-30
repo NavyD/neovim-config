@@ -30,23 +30,7 @@ return {
   },
   -- [feat: native (vim.ui.select) and fzf-lua pickers #188](https://github.com/linux-cultist/venv-selector.nvim/pull/188)
   -- https://github.com/LazyVim/LazyVim/blob/ec5981dfb1222c3bf246d9bcaa713d5cfa486fbd/lua/lazyvim/plugins/extras/lang/python.lua#L116
-  { "linux-cultist/venv-selector.nvim", enabled = false },
-  {
-    "stefanboca/venv-selector.nvim",
-    name = "auto-venv-selector.nvim",
-    branch = "sb/push-rlpxsqmllxtz",
-    cmd = "VenvSelect",
-    opts = {
-      settings = {
-        options = {
-          notify_user_on_venv_activation = true,
-        },
-      },
-    },
-    --  Call config for python files and load the cached venv automatically
-    ft = "python",
-    keys = { { "<leader>cv", "<cmd>:VenvSelect<cr>", desc = "Select VirtualEnv", ft = "python" } },
-  },
+  { "linux-cultist/venv-selector.nvim", enabled = true },
   {
     "mfussenegger/nvim-lint",
     optional = true,
