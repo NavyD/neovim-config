@@ -16,12 +16,20 @@ pre-commit:
           - name: stylua
             glob: "*.lua"
             run: stylua --check '{staged_files}'
-#           - name: lua-language-server check
-#             glob: "*.lua"
-#             run: |
-#               lazydir=$(nvim --clean --headless --cmd 'echo stdpath("data") .. "/lazy"')
-#               if [ ! -e "$lazydir" ]; then
-#                   # 安装插件
-#                   nvim -c 'q'
-#               end
-#               lua-language-server --configpath .luarc.lua --check .
+          # - name: lua-language-server check
+          #   glob: "*.lua"
+          #   # if ! command -v nvim >&/dev/null; then
+          #   #     echo 'Skip check luals due to not found nvim'
+          #   #     exit 0
+          #   # fi
+          #   # NOTE: `sh -c "xxx 'echo stdpath("data")'"` 会解析失败
+          #   # 且也无法在 `'EOF'` 中使用
+          #   # lazydir=$(nvim --clean --headless --cmd 'echo stdpath("data") .. "/lazy"')
+          #   # if [ ! -d "$lazydir" ]; then
+          #   #     echo "Not found lazy dir $lazydir"
+          #   #     exit 1
+          #   # end
+          #   # lua-language-server --configpath .luarc.lua --check .
+          #   run: |
+          #     command -v nvim >&/dev/null && \
+          #     lua-language-server --configpath .luarc.lua --check .
