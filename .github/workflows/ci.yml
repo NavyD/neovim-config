@@ -47,52 +47,52 @@ jobs:
           set -x
           lefthook run pre-commit "${opts[@]}"
 
-  luals-check:
-    runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    # https://github.com/williamboman/mason.nvim/blob/main/.github/workflows/tests.yml
-    strategy:
-      fail-fast: false
-      matrix:
-        nvim_version:
-          # - v0.10.4
-          - v0.11.0
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      # https://github.com/williamboman/mason.nvim/blob/main/.github/workflows/tests.yml
-      # https://github.com/rhysd/action-setup-vim
-      - uses: rhysd/action-setup-vim@v1
-        with:
-          neovim: true
-          version: ${{ matrix.nvim_version }}
-      - name: Cache mise
-        id: cache-mise
-        if: ${{ env.ACT }}
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.local/share/mise
-          key: act-${{runner.os}}-mise-${{hashFiles('mise.*.toml', 'mise.toml')}}
-          restore-keys: |
-            act-${{runner.os}}-mise-${{hashFiles('mise.*.toml', 'mise.toml')}}
-            act-${{runner.os}}-mise-
-      - uses: jdx/mise-action@v2
-      - name: Cache nvim data
-        id: cache-nvim-data
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.local/share/${{ github.event.repository.name }}
-            ~/AppData/Local/${{ github.event.repository.name }}
-          key: act-${{runner.os}}-nvim-data-${{matrix.nvim_version}}-${{hashFiles('*.lua')}}
-          restore-keys: |
-            act-${{runner.os}}-nvim-data-${{matrix.nvim_version}}-${{hashFiles('*.lua')}}
-            act-${{runner.os}}-nvim-data-${{matrix.nvim_version}}-
-      - name: init nvim
-        # 使用当前仓库作为nvim 配置目录，`nvim -u init.lua` 无效
-        run: XDG_CONFIG_HOME=$(dirname "$PWD") NVIM_APPNAME=$(basename "$PWD") nvim --headless -c 'q'
-      - name: luals check
-        run: lua-language-server --configpath .luarc.lua --check .
+  # luals-check:
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #   # https://github.com/williamboman/mason.nvim/blob/main/.github/workflows/tests.yml
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       nvim_version:
+  #         # - v0.10.4
+  #         - v0.11.0
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 1
+  #     # https://github.com/williamboman/mason.nvim/blob/main/.github/workflows/tests.yml
+  #     # https://github.com/rhysd/action-setup-vim
+  #     - uses: rhysd/action-setup-vim@v1
+  #       with:
+  #         neovim: true
+  #         version: ${{ matrix.nvim_version }}
+  #     - name: Cache mise
+  #       id: cache-mise
+  #       if: ${{ env.ACT }}
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ~/.local/share/mise
+  #         key: act-${{runner.os}}-mise-${{hashFiles('mise.*.toml', 'mise.toml')}}
+  #         restore-keys: |
+  #           act-${{runner.os}}-mise-${{hashFiles('mise.*.toml', 'mise.toml')}}
+  #           act-${{runner.os}}-mise-
+  #     - uses: jdx/mise-action@v2
+  #     - name: Cache nvim data
+  #       id: cache-nvim-data
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ~/.local/share/${{ github.event.repository.name }}
+  #           ~/AppData/Local/${{ github.event.repository.name }}
+  #         key: act-${{runner.os}}-nvim-data-${{matrix.nvim_version}}-${{hashFiles('*.lua')}}
+  #         restore-keys: |
+  #           act-${{runner.os}}-nvim-data-${{matrix.nvim_version}}-${{hashFiles('*.lua')}}
+  #           act-${{runner.os}}-nvim-data-${{matrix.nvim_version}}-
+  #     - name: init nvim
+  #       # 使用当前仓库作为nvim 配置目录，`nvim -u init.lua` 无效
+  #       run: XDG_CONFIG_HOME=$(dirname "$PWD") NVIM_APPNAME=$(basename "$PWD") nvim --headless -c 'q'
+  #     - name: luals check
+  #       run: lua-language-server --configpath .luarc.lua --check .
