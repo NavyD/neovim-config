@@ -49,6 +49,8 @@ jobs:
 
   luals-check:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     # https://github.com/williamboman/mason.nvim/blob/main/.github/workflows/tests.yml
     strategy:
       fail-fast: false
@@ -78,7 +80,19 @@ jobs:
             act-${{runner.os}}-mise-${{hashFiles('mise.*.toml', 'mise.toml')}}
             act-${{runner.os}}-mise-
       - uses: jdx/mise-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Cache nvim data
+        id: cache-nvim-data
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/${{ github.event.repository.name }}
+            ~/AppData/Local/${{ github.event.repository.name }}
+          key: act-${{runner.os}}-nvim-data-${{matrix.nvim_version}}-${{hashFiles('*.lua')}}
+          restore-keys: |
+            act-${{runner.os}}-nvim-data-${{matrix.nvim_version}}-${{hashFiles('*.lua')}}
+            act-${{runner.os}}-nvim-data-${{matrix.nvim_version}}-
+      - name: init nvim
+        # 使用当前仓库作为nvim 配置目录，`nvim -u init.lua` 无效
+        run: XDG_CONFIG_HOME=$(dirname "$PWD") NVIM_APPNAME=$(basename "$PWD") nvim --headless -c 'q'
       - name: luals check
         run: lua-language-server --configpath .luarc.lua --check .
