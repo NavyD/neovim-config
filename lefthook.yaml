@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/evilmartians/lefthook/master/schema.json
+# https://lefthook.dev/configuration/index.html
+min_version: "1.11.5"
+remotes:
+  - git_url: https://github.com/NavyD/lefthook-config
+    refetch_frequency: 1h
+    configs:
+      - git-repo.yaml
+pre-commit:
+  piped: true
+  jobs:
+    - name: lint
+      group:
+        parallel: true
+        jobs:
+          - name: stylua
+            glob: "*.lua"
+            run: stylua --check '{staged_files}'
+#           - name: lua-language-server check
+#             glob: "*.lua"
+#             run: |
+#               lazydir=$(nvim --clean --headless --cmd 'echo stdpath("data") .. "/lazy"')
+#               if [ ! -e "$lazydir" ]; then
+#                   # 安装插件
+#                   nvim -c 'q'
+#               end
+#               lua-language-server --configpath .luarc.lua --check .
