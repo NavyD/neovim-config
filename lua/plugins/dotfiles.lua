@@ -13,6 +13,9 @@ return {
       },
     },
   },
+  -- NOTE: systemd-language-server 不被
+  -- [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim#available-lsp-servers)
+  -- 支持，所以需要主动配置
   {
     "neovim/nvim-lspconfig",
     dependencies = {
@@ -25,6 +28,7 @@ return {
       },
     },
     -- lspconfig lazy 相关配置参考： https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/plugins/extras/lang/yaml.lua
+    -- https://www.lazyvim.org/plugins/lsp#nvim-lspconfig
     opts = {
       ---@module 'vim.lsp'
       ---@module "lspconfig.configs"
@@ -66,7 +70,9 @@ return {
   },
   {
     "xvzc/chezmoi.nvim",
-    enabled = true,
+    -- 由于修改部分文件如 chezmoiexternal 保存时会导致自动运行 cz apply 触发更新相关内容。
+    -- 禁用以避免这类问题，以后手动运行即可
+    enabled = false,
     dependencies = {
       { "nvim-neotest/nvim-nio" },
     },
