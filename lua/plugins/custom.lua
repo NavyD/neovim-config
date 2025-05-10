@@ -85,9 +85,11 @@ return {
                   -- 查看通知的preview避免隐藏超出列长的部分
                   -- notifications 预览应该 wrap 避免无法查看全部或 item 被wrap
                   -- NOTE: 聚焦到 preview 上使用 `<a-w>`
+                  -- editorconfig-checker-disable
                   -- 参考 [How to scroll preview panel in git log? #5523](https://github.com/LazyVim/LazyVim/discussions/5523#discussioncomment-12060745)
                   -- https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#snackspickeractionscycle_win
                   -- https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#%EF%B8%8F-config
+                  -- editorconfig-checker-enable
                   wrap = true,
                 },
               },
@@ -107,5 +109,11 @@ return {
         desc = "Zoxide",
       },
     },
+  },
+  {
+    --- [fix(mason): conform to v2 changes #6053](https://github.com/LazyVim/LazyVim/pull/6053#issuecomment-2865604700)
+    "LazyVim/LazyVim",
+    url = "https://github.com/dpetka2001/LazyVim",
+    branch = "fix/mason-v2",
   },
 }
