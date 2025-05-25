@@ -110,10 +110,4 @@ return {
       },
     },
   },
-  {
-    --- [fix(mason): conform to v2 changes #6053](https://github.com/LazyVim/LazyVim/pull/6053#issuecomment-2865604700)
-    "LazyVim/LazyVim",
-    url = "https://github.com/dpetka2001/LazyVim",
-    branch = "fix/mason-v2",
-  },
 }
