@@ -125,7 +125,8 @@ return {
         ---@module 'mason'
         ---@type MasonSettings
         opts = {
-          ensure_installed = { "tree-sitter-cli" },
+          -- 在 windows 上无法安装 tree-sitter-cli 禁用避免重复安装
+          ensure_installed = jit.os == "Windows" and { "tree-sitter-cli" } or {},
         },
       },
       {
@@ -149,7 +150,7 @@ return {
       { "echasnovski/mini.icons" },
     },
     ---@module 'markview'
-    ---@type mkv.config
+    ---@type markview.config
     opts = {
       preview = {
         -- [linewise_hybrid_mode](https://github.com/OXY2DEV/markview.nvim/wiki/Preview-options#linewise_hybrid_mode)
@@ -174,7 +175,7 @@ return {
         },
       },
     },
-    ---@param opts mkv.config
+    ---@param opts markview.config
     config = function(_, opts)
       -- https://github.com/OXY2DEV/markview.nvim/wiki/Extra-modules#-extra-modules
       -- 使用 :Checkbox 修改 box 列表
