@@ -30,6 +30,24 @@ return {
       { "<leader>uB", "<cmd>TransparentToggle<cr>", { desc = "Toggle transparency" } },
     },
   },
+	{
+		"catppuccin/nvim",
+    -- [bug: failed to run config for bufferline.nvim #6355](https://github.com/LazyVim/LazyVim/issues/6355#issuecomment-3212986215)
+		opts = function(_, opts)
+			local module = require("catppuccin.groups.integrations.bufferline")
+			if module then
+				module.get = module.get_theme
+			end
+			return opts
+		end,
+	},
+  -- Configure LazyVim to load theme
+  -- {
+  --   "LazyVim/LazyVim",
+  --   opts = {
+  --     colorscheme = "catppuccin",
+  --   },
+  -- },
   { -- [auto-dark-mode.nvim](https://github.com/f-person/auto-dark-mode.nvim)
     "f-person/auto-dark-mode.nvim",
     -- 在termux中无效禁止加载
@@ -37,7 +55,7 @@ return {
     ---@module 'auto-dark-mode'
     ---@type AutoDarkModeOptions
     opts = {
-      update_interval = 1000,
+      update_interval = 3000,
       set_dark_mode = function()
         vim.api.nvim_set_option_value("background", "dark", {})
       end,
