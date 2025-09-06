@@ -30,24 +30,33 @@ return {
       { "<leader>uB", "<cmd>TransparentToggle<cr>", { desc = "Toggle transparency" } },
     },
   },
-	{
-		"catppuccin/nvim",
+  {
+    "catppuccin/nvim",
     -- [bug: failed to run config for bufferline.nvim #6355](https://github.com/LazyVim/LazyVim/issues/6355#issuecomment-3212986215)
-		opts = function(_, opts)
-			local module = require("catppuccin.groups.integrations.bufferline")
-			if module then
-				module.get = module.get_theme
-			end
-			return opts
-		end,
-	},
+    ---@param opts CatppuccinOptions
+    opts = function(_, opts)
+      local module = require("catppuccin.groups.integrations.bufferline")
+      if module then
+        module.get = module.get_theme
+      end
+
+      ---@diagnostic disable-next-line: missing-fields
+      opts = {
+        integrations = {
+          -- markview = false,
+          -- diffview = false,
+        },
+      }
+      return opts
+    end,
+  },
   -- Configure LazyVim to load theme
-  -- {
-  --   "LazyVim/LazyVim",
-  --   opts = {
-  --     colorscheme = "catppuccin",
-  --   },
-  -- },
+  {
+    "LazyVim/LazyVim",
+    opts = {
+      colorscheme = "catppuccin",
+    },
+  },
   { -- [auto-dark-mode.nvim](https://github.com/f-person/auto-dark-mode.nvim)
     "f-person/auto-dark-mode.nvim",
     -- 在termux中无效禁止加载
