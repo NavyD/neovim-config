@@ -28,9 +28,23 @@ return {
       },
     },
   },
-  -- [feat: native (vim.ui.select) and fzf-lua pickers #188](https://github.com/linux-cultist/venv-selector.nvim/pull/188)
-  -- https://github.com/LazyVim/LazyVim/blob/ec5981dfb1222c3bf246d9bcaa713d5cfa486fbd/lua/lazyvim/plugins/extras/lang/python.lua#L116
-  { "linux-cultist/venv-selector.nvim", enabled = true },
+  -- [bug: VenvSelect is now using main as the updated branch again. Please remove branch = regexp from your config. #6381](https://github.com/LazyVim/LazyVim/issues/6381#issuecomment-3241466459)
+  {
+    "linux-cultist/venv-selector.nvim",
+    branch = "main",
+    -- lazy = false,
+    ft = "python",
+    enabled = true,
+    -- NOTE: venv-selector 源码中无 type
+    opts = {
+      -- [Default searches](https://github.com/linux-cultist/venv-selector.nvim#default-searches)
+      search = {},
+      -- [Global options to the plugin](https://github.com/linux-cultist/venv-selector.nvim#global-options-to-the-plugin)
+      options = {
+        on_venv_activate_callback = nil,
+      },
+    },
+  },
   {
     "mfussenegger/nvim-lint",
     optional = true,
