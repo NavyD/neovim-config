@@ -9,6 +9,7 @@ return {
         -- "shellcheck", -- lazyvim 已配置
         -- 仅在存在 pwsh 时才会运行 pwsh 启动 LSP 服务
         -- 最好使用 pwsh 7+ https://github.com/PowerShell/PowerShellEditorServices#supported-powershell-versions
+        -- powershell-editor-services@v4.3.0
         unpack(vim.fn.executable("pwsh") == 1 and { "powershell-editor-services" } or {}),
       },
     },
@@ -33,19 +34,31 @@ return {
       ---@module 'vim.lsp'
       ---@module "lspconfig.configs"
       ---@type lspconfig.options
-      ---@diagnostic disable-next-line: missing-fields
+      ---@diagnostic disable: missing-fields
       servers = {
         -- https://github.com/psacawa/systemd-language-server#nvim-lspconfig
         -- 内置 systemd_ls 配置 https://github.com/neovim/nvim-lspconfig/blob/master/lua/lspconfig/configs/systemd_ls.lua
         ---@type lspconfig.Config
-        ---@diagnostic disable-next-line: missing-fields
         systemd_ls = {
           enabled = true,
           -- NOTE: *.service.tmpl 无法加载使用 lsp
           -- 这是由于 systemd-language-server 不支持 tmpl 后缀，使用 `:LspLog`
           -- `raise ve_exc\r\nValueError: 'tmpl' is not a valid UnitType\r\n"`
         },
+        powershell_es = {
+          settings = {
+            powershell = {
+              codeFormatting = {
+                -- 默认与 vscode-powershell 格式化保持一致，可以通过 neoconf.nvim
+                -- 读取项目级别中的 .vscode/settings.json 覆盖配置
+                openBraceOnSameLine = true,
+                newLineAfterCloseBrace = true,
+              },
+            },
+          },
+        },
       },
+      ---@diagnostic enable: missing-fields
     },
   },
   {
