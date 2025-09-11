@@ -1,3 +1,4 @@
+-- editorconfig-checker-disable
 ---@type LazyPluginSpec[]
 return {
   {
@@ -54,7 +55,7 @@ return {
   {
     "LazyVim/LazyVim",
     opts = {
-      colorscheme = "catppuccin",
+      -- colorscheme = "catppuccin",
     },
   },
   { -- [auto-dark-mode.nvim](https://github.com/f-person/auto-dark-mode.nvim)
