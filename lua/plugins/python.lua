@@ -1,3 +1,4 @@
+-- editorconfig-checker-disable
 -- 在 uv 项目中返回 PATH 中的 python 路径，否则返回 nil
 ---@return string|nil
 local function get_py_binpath()
@@ -25,23 +26,6 @@ return {
           -- virtual envs in the local directory and for Pipenev/Poetry configs
           python = get_py_binpath(),
         },
-      },
-    },
-  },
-  -- [bug: VenvSelect is now using main as the updated branch again. Please remove branch = regexp from your config. #6381](https://github.com/LazyVim/LazyVim/issues/6381#issuecomment-3241466459)
-  {
-    "linux-cultist/venv-selector.nvim",
-    branch = "main",
-    -- lazy = false,
-    ft = "python",
-    enabled = true,
-    -- NOTE: venv-selector 源码中无 type
-    opts = {
-      -- [Default searches](https://github.com/linux-cultist/venv-selector.nvim#default-searches)
-      search = {},
-      -- [Global options to the plugin](https://github.com/linux-cultist/venv-selector.nvim#global-options-to-the-plugin)
-      options = {
-        on_venv_activate_callback = nil,
       },
     },
   },
