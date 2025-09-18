@@ -1,7 +1,7 @@
 ---@type LazyPluginSpec[]
 return {
   {
-    "williamboman/mason.nvim",
+    "mason-org/mason.nvim",
     ---@module 'mason'
     ---@type MasonSettings
     opts = {
@@ -15,13 +15,13 @@ return {
     },
   },
   -- NOTE: systemd-language-server 不被
-  -- [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim#available-lsp-servers)
+  -- [mason-lspconfig.nvim](https://github.com/mason-org/mason-lspconfig.nvim#available-lsp-servers)
   -- 支持，所以需要主动配置
   {
     "neovim/nvim-lspconfig",
     dependencies = {
       {
-        "williamboman/mason.nvim",
+        "mason-org/mason.nvim",
         ---@module 'mason'
         ---@type MasonSettings
         -- https://github.com/psacawa/systemd-language-server

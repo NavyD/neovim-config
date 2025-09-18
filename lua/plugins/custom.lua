@@ -21,25 +21,28 @@ return {
     cond = not (vim.env.PREFIX and string.find(vim.env.PREFIX, "com.termux")),
   },
   {
-    "nvim-treesitter/nvim-treesitter",
-    opts = {
-      textobjects = {
-        -- 移动代码参数位置
-        -- [Text objects: swap](https://github.com/nvim-treesitter/nvim-treesitter-textobjects#text-objects-swap)
-        swap = {
-          enable = true,
-          swap_next = {
-            ["<leader>a"] = "@parameter.inner",
-          },
-          swap_previous = {
-            ["<leader>A"] = "@parameter.inner",
-          },
-        },
+    "nvim-treesitter/nvim-treesitter-textobjects",
+    keys = {
+      -- 移动代码参数位置
+      -- [Text objects: swap](https://github.com/nvim-treesitter/nvim-treesitter-textobjects/tree/main?tab=readme-ov-file#text-objects-swap)
+      {
+        "<leader>a",
+        function()
+          require("nvim-treesitter-textobjects.swap").swap_next("@parameter.inner")
+        end,
+        desc = "Swap parameter to next",
+      },
+      {
+        "<leader>A",
+        function()
+          require("nvim-treesitter-textobjects.swap").swap_previous("@parameter.inner")
+        end,
+        desc = "Swap parameter to previous",
       },
     },
   },
   {
-    "williamboman/mason.nvim",
+    "mason-org/mason.nvim",
     opts = function(_, opts)
       local new_installeds = {
         -- [A CLI tool for code structural search, lint and rewriting](https://github.com/ast-grep/ast-grep)

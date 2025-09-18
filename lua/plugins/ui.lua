@@ -1,9 +1,12 @@
 -- editorconfig-checker-disable
+---@module 'lazy'
 ---@type LazyPluginSpec[]
 return {
   {
     "rachartier/tiny-inline-diagnostic.nvim",
     event = "VeryLazy",
+    -- NOTE: 临时禁用避免同时显示多种 diag 消息
+    cond = false,
     priority = 1000,
     config = function()
       -- https://github.com/rachartier/tiny-inline-diagnostic.nvim/#configuration
@@ -26,6 +29,7 @@ return {
           -- overwrite_events = { "DiagnosticChanged", "BufEnter" },
         },
       })
+      -- FIXME:启动后会同时显示 2 种 diagnostic messages ，需要在 cmdline 中手动运行才可移除 virtual_text 的显示
       vim.diagnostic.config({ virtual_text = false }) -- Disable default virtual text
     end,
   },

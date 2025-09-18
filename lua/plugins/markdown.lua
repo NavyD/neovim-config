@@ -120,7 +120,7 @@ return {
       -- [Requirements](https://github.com/OXY2DEV/markview.nvim#-requirements)
       {
         -- On windows/linux, you might need tree-sitter CLI for the latex parser
-        "williamboman/mason.nvim",
+        "mason-org/mason.nvim",
         optional = true,
         ---@module 'mason'
         ---@type MasonSettings
@@ -147,7 +147,7 @@ return {
         },
         optional = true,
       },
-      { "echasnovski/mini.icons" },
+      { "nvim-mini/mini.icons" },
     },
     ---@module 'markview'
     ---@type markview.config

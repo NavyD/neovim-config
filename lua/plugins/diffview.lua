@@ -1,5 +1,5 @@
 -- 参考https://github.com/sindrets/diffview.nvim
----@class LazyPluginSpec
+---@type LazyPluginSpec
 return {
   "sindrets/diffview.nvim",
   enabled = true,
