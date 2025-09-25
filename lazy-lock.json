@@ -22,6 +22,7 @@
   "jieba.vim": { "branch": "rust", "commit": "d84c3a034bd03fa562686a7b499679be2a731d8a" },
   "lazy.nvim": { "branch": "main", "commit": "6c3bda4aca61a13a9c63f1c1d1b16b9d3be90d7a" },
   "lazydev.nvim": { "branch": "main", "commit": "258d2a5ef4a3e3d6d9ba9da72c9725c53e9afcbd" },
+  "lensline.nvim": { "branch": "main", "commit": "a5a4d9daf556318ec7211222352c00a8a148afa1" },
   "log-highlight.nvim": { "branch": "main", "commit": "cac07cf2d1937038f6627a450bef4664f096b120" },
   "lua-openresty-types": { "branch": "main", "commit": "3376d52b3e061f40751f5d12505a610b898d13ce" },
   "lualine.nvim": { "branch": "master", "commit": "b8c23159c0161f4b89196f74ee3a6d02cdc3a955" },

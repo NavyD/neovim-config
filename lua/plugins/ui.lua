@@ -31,4 +31,20 @@ return {
       vim.diagnostic.config({ virtual_text = false }) -- Disable default virtual text
     end,
   },
+  {
+    -- [Modular nvim codelens support with inline references, git blame and more](https://github.com/oribarilan/lensline.nvim)
+    "oribarilan/lensline.nvim",
+    version = "*", -- or: branch = 'release/1.x' for latest non-breaking updates
+    event = "LspAttach",
+    opts = {
+      style = {
+        placement = "inline",
+        prefix = "",
+        render = "focused", -- or "all" for showing lenses in all functions
+      },
+    },
+    -- config = function()
+    --   require("lensline").setup()
+    -- end,
+  },
 }
