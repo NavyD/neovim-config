@@ -5,8 +5,6 @@ return {
   {
     "rachartier/tiny-inline-diagnostic.nvim",
     event = "VeryLazy",
-    -- NOTE: 临时禁用避免同时显示多种 diag 消息
-    cond = false,
     priority = 1000,
     config = function()
       -- https://github.com/rachartier/tiny-inline-diagnostic.nvim/#configuration
