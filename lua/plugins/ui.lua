@@ -27,7 +27,6 @@ return {
           -- overwrite_events = { "DiagnosticChanged", "BufEnter" },
         },
       })
-      -- FIXME:启动后会同时显示 2 种 diagnostic messages ，需要在 cmdline 中手动运行才可移除 virtual_text 的显示
       vim.diagnostic.config({ virtual_text = false }) -- Disable default virtual text
     end,
   },
@@ -46,5 +45,11 @@ return {
     -- config = function()
     --   require("lensline").setup()
     -- end,
+  },
+  {
+    "nvim-mini/mini.animate",
+    optional = true,
+    -- NOTE: 在 vscode 中禁用避免滚动出问题，使用 `vscode=true` 无效
+    cond = vim.g.neovide == nil and vim.g.vscode == nil,
   },
 }
