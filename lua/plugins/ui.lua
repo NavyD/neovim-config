@@ -36,10 +36,15 @@ return {
     version = "*", -- or: branch = 'release/1.x' for latest non-breaking updates
     event = "LspAttach",
     opts = {
-      style = {
-        placement = "inline",
-        prefix = "",
-        render = "focused", -- or "all" for showing lenses in all functions
+      profiles = {
+        {
+          name = "minimal",
+          style = {
+            placement = "inline",
+            prefix = "",
+            -- render = "focused", -- optionally render lenses only for focused function
+          },
+        },
       },
     },
     -- config = function()
