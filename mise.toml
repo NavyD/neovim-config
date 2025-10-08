@@ -1,29 +1,20 @@
 [tools]
-lua-language-server = "3"
 typos = "1"
-gitleaks = '8'
+gitleaks = "8"
 python = "3.11"
-"pipx:pre-commit-hooks" = "5"
+"pipx:pre-commit-hooks" = "6"
 "pipx:commitizen" = "4"
-yamllint = '1'
-actionlint = '1'
-stylua = '2'
-"ubi:huacnlee/autocorrect" = "latest"
+yamllint = "1"
+actionlint = "1"
+stylua = "2"
+"ubi:huacnlee/autocorrect" = "2"
+tombi = "0.6"
+prettier = "3.6"
+
 [tools."ubi:editorconfig-checker/editorconfig-checker"]
 version = "3"
 matching = "editorconfig-checker"
-[tools.'ubi:tamasfe/taplo']
-version = '0.10'
-# mise registry 默认的方式会在 win 上命令为 `taplo` 会无法打开
-rename_exe = 'taplo{% if os_family() == "windows" %}.exe{% endif %}'
+
 [tools.'ubi:evilmartians/lefthook']
-version = '1.12'
+version = "1.13"
 rename_exe = 'lefthook{% if os_family() == "windows" %}.exe{% endif %}'
-
-[settings]
-windows_default_inline_shell_args = "powershell -NoProfile -NoLogo -Command"
-
-[tasks.luals-check]
-run = '''
-lua-language-server --check . --configpath .luarc.lua
-'''
