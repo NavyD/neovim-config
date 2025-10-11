@@ -1,0 +1,8 @@
+[default]
+# [Exclude specific line #316](https://github.com/crate-ci/typos/issues/316#issuecomment-2886204780)
+extend-ignore-re = [
+  # Custom ignore regex patterns: https://github.com/crate-ci/typos/blob/master/docs/reference.md#example-configurations
+  ".*(#|--|//|/*)\\s*(?:spellchecker|typos):\\s*disable-next-line[^\\n]*\\n[^\\n]*",
+  "(?Rm)^.*(#|--|//|/*)\\s*(spellchecker|typos):\\s*disable-line$",
+  "(?s)(#|--|//|/*)\\s*(spellchecker|typos):\\s*disable.*?\\n\\s*(#|//#|--|//|/*)\\s*(spellchecker|typos):\\s*enable"
+]
