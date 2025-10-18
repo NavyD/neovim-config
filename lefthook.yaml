@@ -1,9 +1,13 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/evilmartians/lefthook/master/schema.json
 # https://lefthook.dev/configuration/index.html
 remotes:
-  - git_url: https://github.com/NavyD/lefthook-config
+  - git_url: https://github.com/NavyD/lefthookrc
     refetch_frequency: 1h
-    ref: v0.2.0
+    ref: v0.4.1
     configs:
-      - git-repo.yaml
+      - lefthook-mise.yaml
+      - lefthook-common.yaml
+      - lefthook-lua.yaml
+      - lefthook-markdown.yaml
 colors: false
+assert_lefthook_installed: true

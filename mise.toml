@@ -10,6 +10,7 @@ stylua = "2"
 "ubi:huacnlee/autocorrect" = "2"
 tombi = "0.6"
 prettier = "3.6"
+markdownlint-cli2 = "0.18"
 
 [tools."ubi:editorconfig-checker/editorconfig-checker"]
 version = "3"
