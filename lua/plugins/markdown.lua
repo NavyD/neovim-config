@@ -152,7 +152,7 @@ return {
         ---@type MasonSettings
         opts = {
           -- 在 windows 上无法安装 tree-sitter-cli 禁用避免重复安装
-          ensure_installed = jit.os == "Windows" and { "tree-sitter-cli" } or {},
+          ensure_installed = jit.os ~= "Windows" and { "tree-sitter-cli" } or {},
         },
       },
       {
