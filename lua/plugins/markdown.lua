@@ -13,11 +13,12 @@ return {
     config = function(_, opts)
       -- 实现参考 https://github.com/datwaft/nvim.conf/blob/1f295b2a45b86ddff2f2a758deaab7e93bee8d2b/lua/packages/language-servers.lua#L84
       local function activate_otter_on_cursor()
-        -- 获取当前光标所在位置由 treesitter 配置的语言
-        local parser = vim.treesitter.get_parser(0)
-        if not parser then
+        local ok, parser = pcall(vim.treesitter.get_parser, 0)
+        if not ok or not parser then
           return
         end
+
+        -- 获取当前光标所在位置由 treesitter 配置的语言
         local line, column = vim.fn.line(".") - 1, vim.fn.col(".") - 1
         local language = parser:language_for_range({ line, column, line, column + 1 }):lang()
         -- 如果当前 buf 的语言与当前位置的语言一致时跳过
@@ -35,14 +36,14 @@ return {
           end)
         end
       end
-      local otter_augroup = vim.api.nvim_create_augroup("otter_autostart", { clear = true })
+
       -- 使用 filetype 的同时结合其他事件如 InsertEnter 设置 autocmd
       vim.api.nvim_create_autocmd("FileType", {
-        group = otter_augroup,
+        group = vim.api.nvim_create_augroup("otter_autostart_ft", { clear = true }),
         pattern = { "markdown", "yaml", "toml", "rust", "json" },
         callback = function(args)
           vim.api.nvim_create_autocmd("InsertEnter", {
-            group = otter_augroup,
+            group = vim.api.nvim_create_augroup("otter_autostart_buf", { clear = true }),
             -- 为当前缓冲区设置插入模式相关的自动命令
             buffer = args.buf,
             callback = activate_otter_on_cursor,
