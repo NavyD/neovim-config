@@ -63,7 +63,7 @@ require("lazy").setup({
   },
   install = { colorscheme = { "tokyonight", "habamax" } },
   -- [How do I stop "Plugin Updates" from appearing? #3298](https://github.com/LazyVim/LazyVim/discussions/3298)
-  checker = { enabled = true, notify = true, frequency = 60 * 60 * 24 * 7 }, -- automatically check for plugin updates
+  checker = { enabled = true, notify = false, frequency = 60 * 60 * 24 * 7 }, -- automatically check for plugin updates
   performance = {
     rtp = {
       -- disable some rtp plugins
