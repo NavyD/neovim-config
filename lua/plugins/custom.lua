@@ -26,18 +26,32 @@ return {
       -- 移动代码参数位置
       -- [Text objects: swap](https://github.com/nvim-treesitter/nvim-treesitter-textobjects/tree/main?tab=readme-ov-file#text-objects-swap)
       {
-        "<leader>a",
+        "<leader>cpl",
         function()
           require("nvim-treesitter-textobjects.swap").swap_next("@parameter.inner")
         end,
         desc = "Swap parameter to next",
       },
       {
-        "<leader>A",
+        "<leader>cph",
         function()
           require("nvim-treesitter-textobjects.swap").swap_previous("@parameter.inner")
         end,
         desc = "Swap parameter to previous",
+      },
+      {
+        "<leader>cpL",
+        function()
+          require("nvim-treesitter-textobjects.swap").swap_next("@parameter.outer")
+        end,
+        desc = "Swap out parameter to next",
+      },
+      {
+        "<leader>cpH",
+        function()
+          require("nvim-treesitter-textobjects.swap").swap_previous("@parameter.outer")
+        end,
+        desc = "Swap out parameter to previous",
       },
     },
   },
