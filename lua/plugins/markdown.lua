@@ -209,10 +209,6 @@ return {
       -- 使用 `<c-a|x>` 增减 head 级别
       require("markview.extras.headings").setup()
       require("markview").setup(opts)
-
-      if package.loaded["tiny-inline-diagnostic"] then
-        vim.diagnostic.config({ virtual_text = false }) -- Disable default virtual text
-      end
     end,
   },
 }
