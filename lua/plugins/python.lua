@@ -39,7 +39,8 @@ return {
       linters_by_ft = {
         -- 使用 dmypy 代替 mypy 加速大型项目检查
         -- https://mypy.readthedocs.io/en/stable/mypy_daemon.html
-        python = { "dmypy" },
+        -- FIXME: dmypy 存在 bug 编辑后无法出现诊断信息
+        python = { "mypy" },
       },
     },
   },
@@ -48,18 +49,33 @@ return {
     "neovim/nvim-lspconfig",
     opts = {
       ---@module "lspconfig.configs"
-      ---@type lspconfig.options
       ---@diagnostic disable: missing-fields
       servers = {
+        ---@type lspconfig.Config
         basedpyright = {
+          -- https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#basedpyright
+          -- NOTE: 不使用 init_options
           settings = {
             basedpyright = {
               analysis = {
                 -- [typeCheckingMode](https://docs.basedpyright.com/latest/benefits-over-pyright/better-defaults/#typecheckingmode)
                 -- [basedpyright/pyright being very unreliable and reporting wrong information](https://www.reddit.com/r/neovim/comments/1bli209/basedpyrightpyright_being_very_unreliable_and/)
                 -- 默认 recommend 会出现许多 warning
+                -- typeCheckingMode = "recommended",
                 typeCheckingMode = "standard",
               },
+            },
+          },
+        },
+        ---@type lspconfig.Config
+        ruff = {
+          -- neovim lsp ruff 配置参考
+          -- https://github.com/neovim/nvim-lspconfig/blob/master/lua/lspconfig/configs/ruff.lua
+          init_options = {
+            settings = {
+              -- ruff 编辑器的配置
+              -- https://docs.astral.sh/ruff/editors/settings/
+              -- fixAll = true,
             },
           },
         },
