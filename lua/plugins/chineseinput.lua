@@ -115,9 +115,9 @@ return {
   {
     -- [基于 jieba 的 Vim 按词跳转插件](https://github.com/kkew3/jieba.vim)
     "kkew3/jieba.vim",
-    version = "*",
-    -- 禁止自动升级避免build出问题
-    -- tag = "v1.0.5",
+    -- 禁止自动升级 使用 `*` 无法获取 git tag 版本
+    -- version = "*",
+    tag = "v1.0.6",
     event = "BufRead",
     enabled = vim.fn.executable(py_bin) == 1 and not (vim.env.PREFIX and string.find(vim.env.PREFIX, "com.termux")),
     ---@type LazySpec[]
