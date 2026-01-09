@@ -2,6 +2,7 @@
 -- 参考[Compatibility with vim-yoink or other yank-related plugins #88](https://github.com/aserowy/tmux.nvim/issues/88#issuecomment-2259591730)
 -- 参考https://github.com/moetayuko/nvimrc/blob/master/lua/plugins/tmux.lua
 -- 目前仅替换了按键从`A[lt]`->`C[trl]`
+---@type LazyPluginSpec[]
 return {
   {
     "aserowy/tmux.nvim",
@@ -78,6 +79,65 @@ return {
         end,
         desc = "Go to right window",
         remap = true,
+      },
+    },
+  },
+  {
+    -- A neovim plugin for moving around your code in a syntax tree aware manner
+    -- https://github.com/aaronik/treewalker.nvim
+    "aaronik/treewalker.nvim",
+    -- enable in vscode or anywhere
+    cond = true,
+    opts = {},
+    keys = {
+      {
+        "[o",
+        "<cmd>Treewalker Up<cr>",
+        desc = "Moves up to the previous neighbor node",
+        mode = { "n", "v" },
+      },
+      {
+        "]o",
+        -- "<M-Down>",
+        "<cmd>Treewalker Down<cr>",
+        desc = "Moves up to the next neighbor node",
+        mode = { "n", "v" },
+      },
+      {
+        "[O",
+        "<cmd>Treewalker Left<cr>",
+        desc = "Moves to the first ancestor node that's on a different line from the current node",
+        mode = { "n", "v" },
+      },
+      {
+        "]O",
+        "<cmd>Treewalker Right<cr>",
+        desc = "Moves to the next node down that's indented further than the current node",
+        mode = { "n", "v" },
+      },
+      {
+        "<M-up>", -- OR: "<M-S-up>",
+        "<cmd>Treewalker SwapUp<cr>",
+        desc = "Swaps up to the previous neighbor node",
+        mode = { "n", "v" },
+      },
+      {
+        "<M-Down>",
+        "<cmd>Treewalker SwapDown<cr>",
+        desc = "Swaps up to the next neighbor node",
+        mode = { "n", "v" },
+      },
+      {
+        "<M-Left>",
+        "<cmd>Treewalker SwapLeft<cr>",
+        desc = "Swaps to the first ancestor node that's on a different line from the current node",
+        mode = { "n", "v" },
+      },
+      {
+        "<M-Right>",
+        "<cmd>Treewalker SwapRight<cr>",
+        desc = "Swaps to the next node down that's indented further than the current node",
+        mode = { "n", "v" },
       },
     },
   },
