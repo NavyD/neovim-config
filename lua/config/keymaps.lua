@@ -137,4 +137,22 @@ if vim.g.vscode == 1 then
   keymaps("n", "gI", vsc_actions("editor.action.goToImplementation"), { desc = "Go to implementation" })
 
   keymaps("n", "<leader>uC", vsc_actions("workbench.action.selectTheme"), { desc = "Preferences: Color Theme" })
+  keymaps("n", "<leader>uw", vsc_actions("editor.action.toggleWordWrap"), { desc = "View: Toggle Word Wrap" })
+  keymaps(
+    "n",
+    "<leader>ub",
+    vsc_actions("workbench.action.toggleLightDarkThemes"),
+    { desc = "Preferences: Toggle between Light/Dark Themes" }
+  )
+  keymaps(
+    { "n", "v" },
+    "<leader>ghr",
+    vsc_actions("git.revertSelectedRanges"),
+    { desc = "Git: Revert Selected Ranges" }
+  )
+  keymaps({ "n", "v" }, "<leader>ge", vsc_actions("workbench.view.scm"), { desc = "View: Show Changes" })
+
+  -- NOTE: 在 vscode 中只能使用 `Alt+Shift+鼠标滚动` 方便水平滚动，没有直接的命令实现 `zH`, `zL`
+  -- keymaps("n", "zh", vsc_actions("scrollLeft"), { desc = "scroll left" })
+  -- keymaps("n", "zl", vsc_actions("scrollRight"), { desc = "scroll right" })
 end
