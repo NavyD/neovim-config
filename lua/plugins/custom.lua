@@ -27,7 +27,6 @@ return {
         -- [A CLI tool for code structural search, lint and rewriting](https://github.com/ast-grep/ast-grep)
         "ast-grep",
         "actionlint",
-        "typos-lsp",
       }
       if vim.fn.executable("cargo") == 1 then
         -- 使用 mason 提供的最新版本
