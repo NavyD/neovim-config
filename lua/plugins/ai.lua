@@ -21,7 +21,11 @@ local source_icons = {
 local provider_presets = {
   deepseek = {
     provider = "openai_fim_compatible",
-    context_window = 4000,
+    context_window = 2000,
+    -- only send the request every x milliseconds, use 0 to disable throttle.
+    throttle = 2000,
+    -- debounce the request in x milliseconds, set to 0 to disable debounce
+    debounce = 800,
     provider_options = {
       openai_fim_compatible = {
         api_key = "MINUETAI_PROVIDER_DEEPSEEK_API_KEY",
@@ -59,7 +63,7 @@ local provider_presets = {
         -- only send the request every x milliseconds, use 0 to disable throttle.
         throttle = 800,
         -- debounce the request in x milliseconds, set to 0 to disable debounce
-        debounce = 200,
+        debounce = 300,
         optional = {
           max_tokens = 32,
           top_p = 0.9,
@@ -70,14 +74,12 @@ local provider_presets = {
 }
 
 local default_provider_preset = nil
-local minuet_enabled = true
 if vim.env[provider_presets.deepseek.provider_options.openai_fim_compatible.api_key] then
   default_provider_preset = "deepseek"
 elseif provider_presets.ollama.provider_options.openai_fim_compatible.end_point then
   default_provider_preset = "ollama"
 else
   -- 如果不存在可用的 ai 补全源，则不启用直接返回，避免补全功能频繁提示错误信息
-  minuet_enabled = false
 end
 
 ---@module 'lazy'
@@ -88,7 +90,7 @@ return {
   {
     "milanglacier/minuet-ai.nvim",
     version = "*",
-    cond = minuet_enabled,
+    cond = default_provider_preset ~= nil,
     event = "BufReadPre",
     dependencies = {
       { "nvim-lua/plenary.nvim" },
@@ -125,7 +127,7 @@ return {
     optional = true,
     ---@module 'blink.cmp'
     ---@type blink.cmp.Config
-    opts = not minuet_enabled and {} or {
+    opts = default_provider_preset == nil and {} or {
       appearance = {
         use_nvim_cmp_as_default = true,
         nerd_font_variant = "normal",
