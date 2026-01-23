@@ -19,32 +19,12 @@ return {
   -- 支持，所以需要主动配置
   {
     "neovim/nvim-lspconfig",
-    dependencies = {
-      {
-        "mason-org/mason.nvim",
-        ---@module 'mason'
-        ---@type MasonSettings
-        -- https://github.com/psacawa/systemd-language-server
-        opts = { ensure_installed = { "systemd-language-server" } },
-      },
-    },
     -- lspconfig lazy 相关配置参考： https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/plugins/extras/lang/yaml.lua
     -- https://www.lazyvim.org/plugins/lsp#nvim-lspconfig
+    ---@type PluginLspOpts
     opts = {
-      ---@module 'vim.lsp'
-      ---@module "lspconfig.configs"
-      ---@type lspconfig.options
-      ---@diagnostic disable: missing-fields
+      ---@type table<string, lazyvim.lsp.Config|boolean>
       servers = {
-        -- https://github.com/psacawa/systemd-language-server#nvim-lspconfig
-        -- 内置 systemd_ls 配置 https://github.com/neovim/nvim-lspconfig/blob/master/lua/lspconfig/configs/systemd_ls.lua
-        ---@type lspconfig.Config
-        systemd_ls = {
-          enabled = true,
-          -- NOTE: *.service.tmpl 无法加载使用 lsp
-          -- 这是由于 systemd-language-server 不支持 tmpl 后缀，使用 `:LspLog`
-          -- `raise ve_exc\r\nValueError: 'tmpl' is not a valid UnitType\r\n"`
-        },
         powershell_es = {
           settings = {
             powershell = {
@@ -58,7 +38,6 @@ return {
           },
         },
       },
-      ---@diagnostic enable: missing-fields
     },
   },
   {
