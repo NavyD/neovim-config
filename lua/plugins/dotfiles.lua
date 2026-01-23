@@ -1,46 +1,6 @@
 ---@type LazyPluginSpec[]
 return {
   {
-    "mason-org/mason.nvim",
-    ---@module 'mason'
-    ---@type MasonSettings
-    opts = {
-      ensure_installed = {
-        -- "shellcheck", -- lazyvim 已配置
-        -- 仅在存在 pwsh 时才会运行 pwsh 启动 LSP 服务
-        -- 最好使用 pwsh 7+ https://github.com/PowerShell/PowerShellEditorServices#supported-powershell-versions
-        -- powershell-editor-services@v4.3.0
-        unpack(vim.fn.executable("pwsh") == 1 and { "powershell-editor-services" } or {}),
-      },
-    },
-  },
-  -- NOTE: systemd-language-server 不被
-  -- [mason-lspconfig.nvim](https://github.com/mason-org/mason-lspconfig.nvim#available-lsp-servers)
-  -- 支持，所以需要主动配置
-  {
-    "neovim/nvim-lspconfig",
-    -- lspconfig lazy 相关配置参考： https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/plugins/extras/lang/yaml.lua
-    -- https://www.lazyvim.org/plugins/lsp#nvim-lspconfig
-    ---@type PluginLspOpts
-    opts = {
-      ---@type table<string, lazyvim.lsp.Config|boolean>
-      servers = {
-        powershell_es = {
-          settings = {
-            powershell = {
-              codeFormatting = {
-                -- 默认与 vscode-powershell 格式化保持一致，可以通过 neoconf.nvim
-                -- 读取项目级别中的 .vscode/settings.json 覆盖配置
-                openBraceOnSameLine = true,
-                newLineAfterCloseBrace = true,
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-  {
     "nvim-treesitter/nvim-treesitter",
     ---@module 'nvim-treesitter'
     ---@type TSConfig
@@ -48,7 +8,6 @@ return {
     opts = {
       -- https://github.com/nvim-treesitter/nvim-treesitter#supported-languages
       ensure_installed = {
-        "powershell",
         "gotmpl",
         "ssh_config",
         "nginx",
