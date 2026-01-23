@@ -31,6 +31,11 @@ vim.filetype.add({
 ---@type LazyPluginSpec[]
 return {
   {
+    -- syntax highlighting and filetype detection for systemd unit files
+    -- https://github.com/wgwoods/vim-systemd-syntax
+    "wgwoods/vim-systemd-syntax",
+  },
+  {
     "neovim/nvim-lspconfig",
     ---@module 'lazyvim'
     ---@type PluginLspOpts
@@ -78,10 +83,12 @@ return {
     "mason-org/mason.nvim",
     -- Systemd Linter
     -- https://github.com/priv-kweihmann/systemdlint
+    ---@type LazyVimMasonSettings
     opts = { ensure_installed = { "systemdlint" } },
   },
   {
     "mfussenegger/nvim-lint",
+    ---@type LazyVimLintSettings
     opts = {
       linters_by_ft = {
         systemd = { "systemdlint", "systemd-analyze" },
