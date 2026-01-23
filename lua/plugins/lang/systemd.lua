@@ -27,6 +27,13 @@ vim.filetype.add({
     image = "systemd",
   },
 })
+
+local os_uname = vim.uv.os_uname()
+-- 由于 systemd-lsp 未预编译 linux aarch64，所以不支持从 mason 下载
+local systemd_lsp_enabled = vim.fn.executable("systemd-lsp") == 1
+  or os_uname.sysname ~= "Linux"
+  or os_uname.machine ~= "aarch64"
+
 ---@module 'lazy'
 ---@type LazyPluginSpec[]
 return {
@@ -38,7 +45,7 @@ return {
   {
     "neovim/nvim-lspconfig",
     ---@type LazyVimLspOpts
-    opts = {
+    opts = not systemd_lsp_enabled and {} or {
       servers = {
         -- language server for systemd unit files - embedded documentation + complete LSP implementation in rust.
         -- https://github.com/JFryy/systemd-lsp
