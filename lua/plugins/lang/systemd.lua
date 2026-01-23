@@ -37,10 +37,8 @@ return {
   },
   {
     "neovim/nvim-lspconfig",
-    ---@module 'lazyvim'
-    ---@type PluginLspOpts
+    ---@type LazyVimLspOpts
     opts = {
-      ---@type table<string, lazyvim.lsp.Config|boolean>
       servers = {
         -- language server for systemd unit files - embedded documentation + complete LSP implementation in rust.
         -- https://github.com/JFryy/systemd-lsp
@@ -83,12 +81,12 @@ return {
     "mason-org/mason.nvim",
     -- Systemd Linter
     -- https://github.com/priv-kweihmann/systemdlint
-    ---@type LazyVimMasonSettings
+    ---@type LazyVimMasonOpts
     opts = { ensure_installed = { "systemdlint" } },
   },
   {
     "mfussenegger/nvim-lint",
-    ---@type LazyVimLintSettings
+    ---@type LazyVimLintOpts
     opts = {
       linters_by_ft = {
         systemd = { "systemdlint", "systemd-analyze" },
