@@ -1,5 +1,5 @@
 -- ansible 不支持 windows 平台作为控制节点
-if vim.fn.has('win32') == 1 then
+if vim.fn.has("win32") == 1 then
   return {}
 end
 
@@ -8,10 +8,12 @@ end
 return {
   {
     "mason-org/mason.nvim",
+    ---@type LazyVimMasonOpts
     opts = { ensure_installed = { "ansible-lint" } },
   },
   {
     "neovim/nvim-lspconfig",
+    ---@type LazyVimLspOpts
     opts = {
       servers = {
         ansiblels = {},
@@ -36,6 +38,7 @@ return {
   -- 添加 ansible lint
   {
     "mfussenegger/nvim-lint",
+    ---@type LazyVimLintOpts
     opts = {
       linters_by_ft = {
         ["yaml.ansible"] = { "ansible_lint" },
