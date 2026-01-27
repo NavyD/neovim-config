@@ -1,23 +1,3 @@
-local source_icons = {
-  minuet = "󱗻",
-  orgmode = "",
-  otter = "󰼁",
-  nvim_lsp = "",
-  lsp = "",
-  buffer = "",
-  luasnip = "",
-  snippets = "",
-  path = "",
-  git = "",
-  tags = "",
-  cmdline = "󰘳",
-  latex_symbols = "",
-  cmp_nvim_r = "󰟔",
-  codeium = "󰩂",
-  -- FALLBACK
-  fallback = "󰜚",
-}
-
 local function get_ollama_api_key()
   return "_"
 end
@@ -155,6 +135,34 @@ end
 ---@module 'lazy'
 ---@type LazyPluginSpec[]
 return {
+  {
+    "LazyVim/LazyVim",
+    ---@module 'lazyvim'
+    ---@type LazyVimOptions
+    opts = {
+      icons = {
+        -- 添加 ai 类型图标到 lazyvim.icons.kinds 中，可以被 lazyvim 处理添加到
+        -- opts.appearance.kind_icons 中 参考默认配置
+        -- https://www.lazyvim.org/configuration#default-settings
+        -- https://www.lazyvim.org/extras/coding/blink#blinkcmp-1
+        -- 参考源码：
+        -- https://github.com/LazyVim/LazyVim/blob/c64a61734fc9d45470a72603395c02137802bc6f/lua/lazyvim/config/init.lua#L59
+        -- https://www.lazyvim.org/extras/coding/blink#blinkcmp
+        -- https://github.com/LazyVim/LazyVim/blob/c64a61734fc9d45470a72603395c02137802bc6f/lua/lazyvim/plugins/extras/coding/blink.lua#L163
+        kinds = {
+          claude = "󰋦",
+          openai = "󱢆",
+          codestral = "󱎥",
+          gemini = "",
+          Groq = "",
+          Openrouter = "󱂇",
+          Ollama = "󰳆",
+          ["Llama.cpp"] = "󰳆",
+          Deepseek = "",
+        },
+      },
+    },
+  },
   -- 提供 ai 补全与 inline hint 补全，类似 copilot 的 ai 补全
   -- https://github.com/milanglacier/minuet-ai.nvim
   {
@@ -209,43 +217,6 @@ return {
     ---@module 'blink.cmp'
     ---@type blink.cmp.Config
     opts = {
-      appearance = {
-        use_nvim_cmp_as_default = true,
-        nerd_font_variant = "normal",
-        kind_icons = {
-          -- LLM Provider icons
-          claude = "󰋦",
-          openai = "󱢆",
-          codestral = "󱎥",
-          gemini = "",
-          Groq = "",
-          Openrouter = "󱂇",
-          Ollama = "󰳆",
-          ["Llama.cpp"] = "󰳆",
-          Deepseek = "",
-        },
-      },
-      completion = {
-        menu = {
-          draw = {
-            columns = {
-              { "label", "label_description", gap = 1 },
-              { "kind_icon", "kind" },
-              { "source_icon" },
-            },
-            components = {
-              source_icon = {
-                -- don't truncate source_icon
-                ellipsis = false,
-                text = function(ctx)
-                  return source_icons[ctx.source_name:lower()] or source_icons.fallback
-                end,
-                highlight = "BlinkCmpSource",
-              },
-            },
-          },
-        },
-      },
       -- https://github.com/milanglacier/minuet-ai.nvim#integration-with-lazyvim
       keymap = {
         -- 在插入模式下刷新补全
