@@ -24,9 +24,8 @@
 ---@module 'lazy'
 ---@type LazyPluginSpec[]
 return {
-  {
-    import = "plugins.lang",
-  },
+  { import = "plugins.lang" },
+  { import = "plugins.editor" },
   {
     "mason-org/mason.nvim",
     -- https://github.com/mason-org/mason.nvim#default-configuration
