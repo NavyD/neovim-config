@@ -4,6 +4,7 @@ if vim.fn.has("win32") == 1 then
 end
 
 -- https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/plugins/extras/lang/ansible.lua
+---@module 'lazy'
 ---@type LazyPluginSpec[]
 return {
   {
@@ -42,6 +43,26 @@ return {
     opts = {
       linters_by_ft = {
         ["yaml.ansible"] = { "ansible_lint" },
+      },
+    },
+  },
+  {
+    "ph1losof/ecolog.nvim",
+    optional = true,
+    ---@type EcologConfigExt
+    ---@diagnostic disable-next-line:missing-fields
+    opts = {
+      providers = {
+        {
+          pattern = "ansible_facts%.env%.[%w_]*",
+          filetype = { "yaml.ansible" },
+          extract_var = function(line, col)
+            return require("ecolog.utils").extract_env_var(line, col, "ansible_facts%.env%.([%w_]*)")
+          end,
+          get_completion_trigger = function()
+            return "ansible_facts.env."
+          end,
+        },
       },
     },
   },
