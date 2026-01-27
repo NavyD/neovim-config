@@ -214,9 +214,9 @@ return {
   {
     "saghen/blink.cmp",
     optional = true,
-    ---@module 'blink.cmp'
-    ---@type blink.cmp.Config
+    ---@type BlinkCmpConfigExt
     opts = {
+      completion_source_icons = { minuet = "󱗻" },
       -- https://github.com/milanglacier/minuet-ai.nvim#integration-with-lazyvim
       keymap = {
         -- 在插入模式下刷新补全
