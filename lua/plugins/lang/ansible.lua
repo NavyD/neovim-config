@@ -55,7 +55,9 @@ return {
       providers = {
         {
           pattern = "ansible_facts%.env%.[%w_]*",
-          filetype = { "yaml.ansible" },
+          -- 从 ft 中移除非法的字符串避免提示错误
+          -- https://github.com/ph1losof/ecolog.nvim/blob/5e2f01e217b68be5d309382595c608295ad5460c/lua/ecolog/providers/init.lua#L436
+          filetype = { "yamlansible", "ansible" },
           extract_var = function(line, col)
             return require("ecolog.utils").extract_env_var(line, col, "ansible_facts%.env%.([%w_]*)")
           end,
