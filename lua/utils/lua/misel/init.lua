@@ -50,11 +50,11 @@ end
 ---@return string? error
 function M.get_mise_env(cwd)
   local proc = require("utils.process")
+  -- NOTE: 在 windows 上执行
+  -- `lua vim.system({'mise', 'env', '--cd', 'C:/Users/navyd/.local/share/chezmoi'}, { text = true }, function(o) print(o.stdout) end)`
+  -- 无法获取指定目录的环境变量，只能使用 opts.cwd
   local env_args = { M._env_state.config.bin_path, "env", "--json", "--quiet" }
-  if cwd then
-    vim.list_extend(env_args, { "--cd", cwd })
-  end
-  local env_sc = proc.run_co(env_args, { text = true })
+  local env_sc = proc.run_co(env_args, { text = true, cwd = cwd })
   if env_sc.code ~= 0 then
     return nil, env_sc.stderr
   end
@@ -71,7 +71,9 @@ end
 
 ---@async
 function M.load_mise_env()
-  local cwd = vim.fs.normalize(vim.v.event.directory or vim.fn.getcwd())
+  local event = vim.v.event
+  -- DirChangedPre=directory, DirChanged=cwd,
+  local cwd = vim.fs.normalize(event.directory or event.cwd or vim.uv.cwd())
   -- 避免快速切换产生大量进程，这里简单的处理第1个即可
   if M._env_state.loading_cwd then
     return
@@ -125,7 +127,7 @@ function M.setup(opts)
     nio.run(M.load_mise_env)
   end
 
-  vim.api.nvim_create_autocmd("DirChangedPre", {
+  vim.api.nvim_create_autocmd("DirChanged", {
     group = vim.api.nvim_create_augroup("mise", { clear = true }),
     callback = function(args)
       if vim.v.event.scope == "global" then
