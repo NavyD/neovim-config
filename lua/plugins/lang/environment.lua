@@ -1,6 +1,22 @@
 ---@module 'lazy'
----@type LazyPluginSpec[]
+---@type LazySpec
 return {
+  {
+    "misel",
+    dir = vim.fs.joinpath(vim.fn.stdpath("config"), "lua/utils"),
+    dependencies = { "nvim-neotest/nvim-nio" },
+    -- NOTE: 如果是在 mason 前运行可能会导致 mise env 运行期间更新了 PATH，
+    -- 而且 mason 是 lazy=true 加载的会导致 mason bin 目录不在 PATH
+    -- 中，最好保证 mason 加载后再运行，但加入 deps 会导致 mason 提前启动这
+    -- 比较奇怪，所以需要 lazy event
+    lazy = false,
+    event = { "CmdlineEnter", "BufRead" },
+    cond = vim.fn.executable("mise") == 1,
+    ---@type misel.Opts
+    opts = {
+      load_env_immediately = vim.env.MISE_SHELL == nil,
+    },
+  },
   {
     -- The most sophisticated all-in-one toolkit to work with .env files and environment variables in NeoVim
     -- https://github.com/ph1losof/ecolog.nvim
