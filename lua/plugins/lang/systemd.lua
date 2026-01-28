@@ -30,9 +30,12 @@ vim.filetype.add({
 
 local os_uname = vim.uv.os_uname()
 -- 由于 systemd-lsp 未预编译 linux aarch64，所以不支持从 mason 下载
-local systemd_lsp_enabled = vim.fn.executable("systemd-lsp") == 1
-  or os_uname.sysname ~= "Linux"
+local systemd_lsp_enabled = os_uname.sysname ~= "Linux"
   or os_uname.machine ~= "aarch64"
+  -- 注意在 wsl 中耗时可达 80ms
+  -- executable() is slow on WSL
+  -- https://github.com/neovim/neovim/issues/31506
+  or vim.fn.executable("systemd-lsp") == 1
 
 ---@module 'lazy'
 ---@type LazyPluginSpec[]
