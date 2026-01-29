@@ -69,69 +69,143 @@ function M.get_mise_env(cwd)
   return env_o, nil
 end
 
+local env = vim.env
+local nio = require("nio")
+local nio_ctrl = nio.control
+
+-- Error executing callback:
+-- .../AppData/Local/nvim-data/lazy/nvim-nio/lua/nio/tasks.lua:100: Async task failed without callback: The coroutine failed with this message:
+-- vim/_options.lua:157: E5560: Vimscript function "setenv" must not be called in a fast event context
+---@async
+---@param name string
+---@return string?
+local function getenv(name)
+  local future = nio_ctrl.future()
+  vim.schedule(function()
+    future.set(env[name])
+  end)
+  return future:wait()
+end
+
+---@async
+---@param ... string|string[]
+---@return table<string, string>
+local function getenvs(...)
+  local envs = {}
+  local names = vim.tbl_flatten({ ... })
+  for _, name in ipairs(names) do
+    envs[name] = getenv(name)
+  end
+  return envs
+end
+
+-- 当执行 mise env 期间更新了指定的环境变量时会多次尝试重新获取直到成功，
+-- 可以避免在 mise env 期间环境变量被修改的问题
+---@async
+---@return table<string, string>?
+---@return string?
+function M.get_consistent_mise_env()
+  local env_names = { "PATH" }
+  local prev_envs = getenvs(env_names)
+
+  local count = 0
+  local max_count = 3
+
+  while true do
+    local mise_env, mise_env_err = M.get_mise_env(cwd)
+    if not mise_env then
+      return nil, mise_env_err
+    end
+
+    local curr_envs = getenvs(env_names)
+    if vim.deep_equal(prev_envs, curr_envs) then
+      return mise_env, nil
+    end
+
+    count = count + 1
+    if count >= max_count then
+      return nil, ("Failed to get consistent %s env %s times"):format(env_names, max_count)
+    end
+
+    local diffstr = vim.diff(vim.inspect(prev_envs), vim.inspect(curr_envs))
+    vim.notify(("Re-acquiring mise env due to variable change: %s"):format(diffstr), vim.log.levels.WARN)
+    prev_envs = curr_envs
+  end
+end
+
 ---@async
 function M.load_mise_env()
   local event = vim.v.event
   -- DirChangedPre=directory, DirChanged=cwd,
   local cwd = vim.fs.normalize(event.directory or event.cwd or vim.uv.cwd())
+
+  -- 上次切换的目录与此次一样则跳过
+  if cwd == M._env_state.prev_cwd then
+    return
+  end
   -- 避免快速切换产生大量进程，这里简单的处理第1个即可
-  if M._env_state.loading_cwd then
+  local loading_cwd = M._env_state.loading_cwd
+  if loading_cwd then
+    if loading_cwd ~= cwd then
+      vim.notify(
+        ("Ignore the mise env loading directory %s because another directory %s is loading"):format(cwd, loading_cwd),
+        vim.log.levels.WARN
+      )
+    end
     return
   end
   M._env_state.loading_cwd = cwd
 
-  vim.notify(("Loading mise env from %s"):format(cwd), vim.log.levels.INFO)
-  local mise_env, mise_env_err = M.get_mise_env(cwd)
+  vim.notify(("Loading mise env in %s"):format(cwd), vim.log.levels.INFO)
+  local mise_env, mise_env_err = M.get_consistent_mise_env()
   if not mise_env then
     vim.notify(mise_env_err, vim.log.levels.ERROR)
     return
   end
 
-  -- Error executing callback:
-  -- .../AppData/Local/nvim-data/lazy/nvim-nio/lua/nio/tasks.lua:100: Async task failed without callback: The coroutine failed with this message:
-  -- vim/_options.lua:157: E5560: Vimscript function "setenv" must not be called in a fast event context
-  vim.schedule(function()
-    -- 去除重复的 paths 避免多次切换目录导致的 PATH 过大的问题
-    if mise_env.PATH then
-      mise_env.PATH = deduplicate_pathstr(mise_env.PATH)
-    end
-    -- 配置 mise 环境变量到 vim.env
-    for name, value in pairs(mise_env) do
-      vim.env[name] = value
-    end
+  -- 去除重复的 paths 避免多次切换目录导致的 PATH 过大的问题
+  if mise_env.PATH then
+    mise_env.PATH = deduplicate_pathstr(mise_env.PATH)
+  end
+  -- 配置 mise 环境变量到 vim.env
+  for name, value in pairs(mise_env) do
+    vim.env[name] = value
+  end
 
-    -- 移除之前的环境变量
-    if M._env_state.prev_env then
-      for name, value in pairs(M._env_state.prev_env) do
-        -- 如果之前的环境变量不再存在，则从 vim.env 中删除
-        -- 可以避免提前移除关键环境变量如 PATH 导致问题，其它存在的变量后续覆盖即可
-        if mise_env[name] == nil then
-          vim.env[name] = nil
-        end
+  -- 移除之前的环境变量
+  if M._env_state.prev_env then
+    for name, value in pairs(M._env_state.prev_env) do
+      -- 如果之前的环境变量不再存在，则从 vim.env 中删除
+      -- 可以避免提前移除关键环境变量如 PATH 导致问题，其它存在的变量后续覆盖即可
+      if mise_env[name] == nil then
+        vim.env[name] = nil
       end
     end
+  end
 
-    -- 保存状态
-    M._env_state.prev_env = mise_env
-    M._env_state.prev_cwd = cwd
-    M._env_state.loading_cwd = nil
-  end)
+  -- 保存状态
+  M._env_state.prev_env = mise_env
+  M._env_state.prev_cwd = cwd
+  M._env_state.loading_cwd = nil
+end
+
+function M.load_env()
+  nio.run(M.load_mise_env)
 end
 
 ---@param opts? misel.Opts
 function M.setup(opts)
   M._env_state.config = vim.tbl_deep_extend("force", M._env_state.config, opts or {})
 
-  local nio = require("nio")
   if M._env_state.config.load_env_immediately then
-    nio.run(M.load_mise_env)
+    M.load_env()
   end
 
   vim.api.nvim_create_autocmd("DirChanged", {
     group = vim.api.nvim_create_augroup("mise", { clear = true }),
     callback = function(args)
       if vim.v.event.scope == "global" then
-        nio.run(M.load_mise_env)
+        M.load_env()
       end
     end,
   })

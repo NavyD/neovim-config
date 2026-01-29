@@ -5,12 +5,11 @@ return {
     "misel",
     dir = vim.fs.joinpath(vim.fn.stdpath("config"), "lua/utils"),
     dependencies = { "nvim-neotest/nvim-nio" },
-    -- NOTE: 如果是在 mason 前运行可能会导致 mise env 运行期间更新了 PATH，
-    -- 而且 mason 是 lazy=true 加载的会导致 mason bin 目录不在 PATH
-    -- 中，最好保证 mason 加载后再运行，但加入 deps 会导致 mason 提前启动这
-    -- 比较奇怪，所以需要 lazy event
+    -- 尽量提前加载环境变量让 lazy 插件也能使用，但这很可能无效，因为启动
+    -- `mise env` 也需要不少时间，除非使用环境变量的插件是 lazy 且在 spec
+    -- 中不应该直接读取环境变量，而是等到启用插件时读取即要使用函数才有效。
     lazy = false,
-    event = { "CmdlineEnter", "BufRead" },
+    priority = 100,
     cond = vim.fn.executable("mise") == 1,
     ---@type misel.Opts
     opts = {
