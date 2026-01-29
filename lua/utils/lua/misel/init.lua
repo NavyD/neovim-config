@@ -1,31 +1,37 @@
 local uv = vim.uv
 local log_levels = vim.log.levels
-local fn = vim.fn
 local json = vim.json
 local env = vim.env
-local fs = vim.fs
 
 local nio = require("nio")
 local nio_ctrl = nio.control
+local proc = require("utils.process")
 
 local M = {}
 
----@class misel.EnvState
-M._env_state = {
-  ---@type table<string, string>?
-  prev_env = nil,
-  ---@type string?
-  prev_cwd = nil,
-  ---@type string? 在加载 mise 环境变量时避免重复加载
-  loading_cwd = nil,
-  ---@class misel.Config
-  config = {
-    load_env_immediately = false,
-    bin_path = "mise",
-  },
-  path_sep = fn.has("win32") == 1 and ";" or ":",
+---@class misel.EnvOpts
+local default_config = {
+  load_env_immediately = false,
+  bin_path = "mise",
 }
----@class (partial) misel.Opts: misel.Config
+
+---@class misel.EnvState
+---@field prev_env table<string, string>?
+---@field prev_cwd string?
+---@field loading_cwd? string? 在加载 mise 环境变量时避免重复加载
+---@field config misel.EnvOpts
+
+---@class misel.EnvState
+local MiseEnvState = {}
+
+---@param opts? misel.EnvOpts
+function MiseEnvState.new(opts)
+  ---@type misel.EnvState
+  local o = {
+    config = vim.tbl_deep_extend("force", default_config, opts or {}),
+  }
+  return setmetatable(o, { __index = MiseEnvState })
+end
 
 ---@param pathstr string
 ---@return string
@@ -55,15 +61,15 @@ local function deduplicate_pathstr(pathstr)
 end
 
 ---@async
+---@param bin_path string
 ---@param cwd? string
 ---@return table<string, string>? env
 ---@return string? error
-function M.get_mise_env(cwd)
-  local proc = require("utils.process")
+local function get_mise_env(bin_path, cwd)
   -- NOTE: 在 windows 上执行
   -- `lua vim.system({'mise', 'env', '--cd', 'C:/Users/navyd/.local/share/chezmoi'}, { text = true }, function(o) print(o.stdout) end)`
   -- 无法获取指定目录的环境变量，只能使用 opts.cwd
-  local env_args = { M._env_state.config.bin_path, "env", "--json", "--quiet" }
+  local env_args = { bin_path, "env", "--json", "--quiet" }
   local env_sc = proc.run_co(env_args, { text = true, cwd = cwd })
   if env_sc.code ~= 0 then
     return nil, env_sc.stderr
@@ -98,7 +104,7 @@ end
 ---@return table<string, string>
 local function getenvs(...)
   local envs = {}
-  local names = vim.tbl_flatten({ ... })
+  local names = vim.iter({ ... }):flatten(math.huge):totable()
   for _, name in ipairs(names) do
     envs[name] = getenv(name)
   end
@@ -110,7 +116,7 @@ end
 ---@async
 ---@return table<string, string>?
 ---@return string?
-function M.get_consistent_mise_env()
+function MiseEnvState:get_consistent_mise_env()
   local env_names = { "PATH" }
   local prev_envs = getenvs(env_names)
 
@@ -118,7 +124,7 @@ function M.get_consistent_mise_env()
   local max_count = 3
 
   while true do
-    local mise_env, mise_env_err = M.get_mise_env(cwd)
+    local mise_env, mise_env_err = get_mise_env(self.config.bin_path, self.loading_cwd)
     if not mise_env then
       return nil, mise_env_err
     end
@@ -140,17 +146,28 @@ function M.get_consistent_mise_env()
 end
 
 ---@async
-function M.load_mise_env()
+function MiseEnvState:load_mise_env()
   local event = vim.v.event
   -- DirChangedPre=directory, DirChanged=cwd,
-  local cwd = fs.normalize(event.directory or event.cwd or uv.cwd())
+  -- local cwd = fs.normalize(event.directory or event.cwd or uv.cwd())
+  ---@type string|nil
+  ---@diagnostic disable-next-line:undefined-field
+  local cwd = event.directory or event.cwd
+  if not cwd then
+    local uv_cwd, cwd_err_name, cwd_err = uv.cwd()
+    if not uv_cwd then
+      vim.notify(("Failed to get cwd by %s: %s"):format(cwd_err_name or "", cwd_err or ""), log_levels.ERROR)
+      return
+    end
+    cwd = uv_cwd
+  end
 
   -- 上次切换的目录与此次一样则跳过
-  if cwd == M._env_state.prev_cwd then
+  if cwd == self.prev_cwd then
     return
   end
   -- 避免快速切换产生大量进程，这里简单的处理第1个即可
-  local loading_cwd = M._env_state.loading_cwd
+  local loading_cwd = self.loading_cwd
   if loading_cwd then
     if loading_cwd ~= cwd then
       vim.notify(
@@ -160,12 +177,12 @@ function M.load_mise_env()
     end
     return
   end
-  M._env_state.loading_cwd = cwd
+  self.loading_cwd = cwd
 
   vim.notify(("Loading mise env in %s"):format(cwd), log_levels.INFO)
-  local mise_env, mise_env_err = M.get_consistent_mise_env()
+  local mise_env, mise_env_err = self:get_consistent_mise_env()
   if not mise_env then
-    vim.notify(mise_env_err, log_levels.ERROR)
+    vim.notify(mise_env_err or "", log_levels.ERROR)
     return
   end
 
@@ -179,8 +196,8 @@ function M.load_mise_env()
   end
 
   -- 移除之前的环境变量
-  if M._env_state.prev_env then
-    for name, value in pairs(M._env_state.prev_env) do
+  if self.prev_env then
+    for name, _ in pairs(self.prev_env) do
       -- 如果之前的环境变量不再存在，则从 vim.env 中删除
       -- 可以避免提前移除关键环境变量如 PATH 导致问题，其它存在的变量后续覆盖即可
       if mise_env[name] == nil then
@@ -190,28 +207,29 @@ function M.load_mise_env()
   end
 
   -- 保存状态
-  M._env_state.prev_env = mise_env
-  M._env_state.prev_cwd = cwd
-  M._env_state.loading_cwd = nil
+  self.prev_env = mise_env
+  self.prev_cwd = cwd
+  self.loading_cwd = nil
 end
 
-function M.load_env()
-  nio.run(M.load_mise_env)
+function MiseEnvState:load_env()
+  nio.run(function()
+    self:load_mise_env()
+  end)
 end
 
----@param opts? misel.Opts
+---@param opts? misel.EnvOpts
 function M.setup(opts)
-  M._env_state.config = vim.tbl_deep_extend("force", M._env_state.config, opts or {})
-
-  if M._env_state.config.load_env_immediately then
-    M.load_env()
+  local me = MiseEnvState.new(opts)
+  if me.config.load_env_immediately then
+    me:load_env()
   end
 
   vim.api.nvim_create_autocmd("DirChanged", {
     group = vim.api.nvim_create_augroup("mise", { clear = true }),
-    callback = function(args)
+    callback = function(_)
       if vim.v.event.scope == "global" then
-        M.load_env()
+        me:load_env()
       end
     end,
   })

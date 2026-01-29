@@ -11,7 +11,7 @@ return {
     lazy = false,
     priority = 100,
     cond = vim.fn.executable("mise") == 1,
-    ---@type misel.Opts
+    ---@type misel.EnvOpts
     opts = {
       load_env_immediately = vim.env.MISE_SHELL == nil,
     },
