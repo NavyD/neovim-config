@@ -1,5 +1,8 @@
+local enable_luals_or_emmyluals = true
+
 -- feature: emmylua-analyzer support
 -- https://github.com/folke/lazydev.nvim/issues/86
+---@module 'lazy'
 ---@type LazySpec
 return {
   { "LuaCATS/luassert", name = "luassert-types", lazy = true },
@@ -19,7 +22,6 @@ return {
         { path = "busted-types/library", words = { "describe" } },
         { path = "wezterm-types", mods = { "wezterm" } },
         { path = "lua-openresty-types/library", words = { "ngx" } },
-        { path = vim.env.VIMRUNTIME, words = { "vim" } },
       },
     },
   },
@@ -30,6 +32,9 @@ return {
     -- https://luals.github.io/wiki/addons/#built-in-addons
     ---@param opts lazydev.Config
     opts = function(_, opts)
+      if enable_luals_or_emmyluals then
+        return
+      end
       opts.library = vim.tbl_filter(function(e)
         local ty = type(e)
         local path = ""
@@ -44,12 +49,13 @@ return {
   },
   {
     "neovim/nvim-lspconfig",
-    ---@type PluginLspOpts
+    ---@type LazyVimLspOpts
     opts = {
       servers = {
         -- 禁用 lua ls
-        lua_ls = { enabled = false },
+        lua_ls = { enabled = enable_luals_or_emmyluals },
         emmylua_ls = {
+          enabled = not enable_luals_or_emmyluals,
           settings = {
             -- https://github.com/god464/nvim/blob/f35ab158d7295e89e389244e474806e05fdb5687/.emmyrc.json
             -- https://github.com/EmmyLuaLs/emmylua-analyzer-rust/blob/main/docs/config/emmyrc_json_EN.md
