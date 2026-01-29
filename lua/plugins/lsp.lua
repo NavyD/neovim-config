@@ -2,6 +2,20 @@
 ---@type LazyPluginSpec[]
 return {
   {
+    "mason-org/mason.nvim",
+    optional = true,
+    -- https://github.com/mason-org/mason.nvim#default-configuration
+    -- 在 lazyvim 中定义的类型，实现参考：
+    -- https://github.com/LazyVim/LazyVim/blob/c64a61734fc9d45470a72603395c02137802bc6f/lua/lazyvim/plugins/lsp/init.lua#L279
+    ---@param opts LazyVimMasonOpts
+    opts = function(_, opts)
+      opts.github = opts.github or {}
+      -- 默认 `https://github.com/%s/releases/download/%s/%s`
+      -- 通常可配置为 `https://gh-proxy.com/https://github.com/%s/releases/download/%s/%s`
+      opts.github.download_url_template = vim.env.MASON_GITHUB_DOWNLOAD_URL_TEMPLATE
+    end,
+  },
+  {
     -- Modular nvim codelens support with inline references, git blame and more
     -- https://github.com/oribarilan/lensline.nvim
     "oribarilan/lensline.nvim",
