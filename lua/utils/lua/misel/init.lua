@@ -1,3 +1,13 @@
+local uv = vim.uv
+local log_levels = vim.log.levels
+local fn = vim.fn
+local json = vim.json
+local env = vim.env
+local fs = vim.fs
+
+local nio = require("nio")
+local nio_ctrl = nio.control
+
 local M = {}
 
 ---@class misel.EnvState
@@ -13,14 +23,14 @@ M._env_state = {
     load_env_immediately = false,
     bin_path = "mise",
   },
-  path_sep = vim.fn.has("win32") == 1 and ";" or ":",
+  path_sep = fn.has("win32") == 1 and ";" or ":",
 }
 ---@class (partial) misel.Opts: misel.Config
 
 ---@param pathstr string
 ---@return string
 local function deduplicate_pathstr(pathstr)
-  local is_windows = vim.uv.os_uname().sysname:match("Windows") ~= nil
+  local is_windows = uv.os_uname().sysname:match("Windows") ~= nil
   local path_sep = is_windows and ";" or ":"
 
   -- -- 2. 将 PATH 字符串拆分为表
@@ -62,16 +72,12 @@ function M.get_mise_env(cwd)
   if not env_str then
     return nil, "not found stdout for mise env"
   end
-  local env_o = vim.json.decode(env_str, { luanil = { object = true, array = true } })
+  local env_o = json.decode(env_str, { luanil = { object = true, array = true } })
   if not env_o then
     return nil, "Failed to decode json with string: " .. env_str
   end
   return env_o, nil
 end
-
-local env = vim.env
-local nio = require("nio")
-local nio_ctrl = nio.control
 
 -- Error executing callback:
 -- .../AppData/Local/nvim-data/lazy/nvim-nio/lua/nio/tasks.lua:100: Async task failed without callback: The coroutine failed with this message:
@@ -128,7 +134,7 @@ function M.get_consistent_mise_env()
     end
 
     local diffstr = vim.diff(vim.inspect(prev_envs), vim.inspect(curr_envs))
-    vim.notify(("Re-acquiring mise env due to variable change: %s"):format(diffstr), vim.log.levels.WARN)
+    vim.notify(("Re-acquiring mise env due to variable change: %s"):format(diffstr), log_levels.WARN)
     prev_envs = curr_envs
   end
 end
@@ -137,7 +143,7 @@ end
 function M.load_mise_env()
   local event = vim.v.event
   -- DirChangedPre=directory, DirChanged=cwd,
-  local cwd = vim.fs.normalize(event.directory or event.cwd or vim.uv.cwd())
+  local cwd = fs.normalize(event.directory or event.cwd or uv.cwd())
 
   -- 上次切换的目录与此次一样则跳过
   if cwd == M._env_state.prev_cwd then
@@ -149,17 +155,17 @@ function M.load_mise_env()
     if loading_cwd ~= cwd then
       vim.notify(
         ("Ignore the mise env loading directory %s because another directory %s is loading"):format(cwd, loading_cwd),
-        vim.log.levels.WARN
+        log_levels.WARN
       )
     end
     return
   end
   M._env_state.loading_cwd = cwd
 
-  vim.notify(("Loading mise env in %s"):format(cwd), vim.log.levels.INFO)
+  vim.notify(("Loading mise env in %s"):format(cwd), log_levels.INFO)
   local mise_env, mise_env_err = M.get_consistent_mise_env()
   if not mise_env then
-    vim.notify(mise_env_err, vim.log.levels.ERROR)
+    vim.notify(mise_env_err, log_levels.ERROR)
     return
   end
 
@@ -169,7 +175,7 @@ function M.load_mise_env()
   end
   -- 配置 mise 环境变量到 vim.env
   for name, value in pairs(mise_env) do
-    vim.env[name] = value
+    env[name] = value
   end
 
   -- 移除之前的环境变量
@@ -178,7 +184,7 @@ function M.load_mise_env()
       -- 如果之前的环境变量不再存在，则从 vim.env 中删除
       -- 可以避免提前移除关键环境变量如 PATH 导致问题，其它存在的变量后续覆盖即可
       if mise_env[name] == nil then
-        vim.env[name] = nil
+        env[name] = nil
       end
     end
   end
