@@ -9,10 +9,69 @@ local proc = require("utils.process")
 
 local M = {}
 
+---@class misel.ReloadLazyPluginOpts
+---@field listen_envs? string[]
+---@field is_reload? fun(prev_envs:table<string, string>, curr_envs:table<string,string>):boolean
+
+---@class misel.ReloadLazyPlugin: misel.ReloadLazyPluginOpts
+---@field name string
+
+---@alias misel.ReloadLazyPlugins table<string, string[] | misel.ReloadLazyPluginOpts[]> | misel.ReloadLazyPlugin[]
+
 ---@class misel.EnvOpts
+---@field load_env_immediately? boolean
+---@field bin_path? string
+---@field reload_lazy_plugins? misel.ReloadLazyPlugins
+
+---@class misel.LastPluginEnv
+---@field plugin_envs table<string, string[]>
+local LastPluginEnv = {}
+
+function LastPluginEnv.new()
+  ---@type misel.LastPluginEnv
+  local o = { plugin_envs = {} }
+  return setmetatable(o, { __index = LastPluginEnv })
+end
+
+---@param plugin misel.ReloadLazyPlugin
+---@param prev_envs table<string, string>
+---@param curr_envs table<string, string>
+---@return boolean
+function LastPluginEnv:is_reload(plugin, prev_envs, curr_envs)
+  -- vim.notify(("plugin=%s"):format(vim.inspect(plugin)), log_levels.INFO)
+  if type(plugin.is_reload) == "function" then
+    return plugin.is_reload(prev_envs, curr_envs)
+  end
+
+  -- 如果未指定任何变量则默认每次都重载
+  if #plugin.listen_envs <= 0 then
+    return true
+  end
+
+  local plugin_name = plugin.name
+  local last_p_env = self.plugin_envs[plugin_name]
+  if not last_p_env then
+    last_p_env = {}
+    self.plugin_envs[plugin_name] = last_p_env
+  end
+
+  local is_reload = false
+  for _, env_name in ipairs(plugin.listen_envs) do
+    local curr_val = curr_envs[env_name]
+    -- 如果当前变量存在且被修改了则 加载
+    if curr_val ~= nil and curr_val ~= last_p_env[env_name] then
+      last_p_env[env_name] = curr_val
+      is_reload = true
+    end
+  end
+  return is_reload
+end
+
+---@type misel.EnvOpts
 local default_config = {
   load_env_immediately = false,
   bin_path = "mise",
+  reload_lazy_plugins = {},
 }
 
 ---@class misel.EnvState
@@ -20,6 +79,7 @@ local default_config = {
 ---@field prev_cwd string?
 ---@field loading_cwd? string? 在加载 mise 环境变量时避免重复加载
 ---@field config misel.EnvOpts
+---@field last_plugin_env misel.LastPluginEnv
 
 ---@class misel.EnvState
 local MiseEnvState = {}
@@ -29,8 +89,73 @@ function MiseEnvState.new(opts)
   ---@type misel.EnvState
   local o = {
     config = vim.tbl_deep_extend("force", default_config, opts or {}),
+    last_plugin_env = LastPluginEnv.new(),
   }
   return setmetatable(o, { __index = MiseEnvState })
+end
+
+---@param curr_envs table<string, string>
+function MiseEnvState:reload_lazy_plugins(curr_envs)
+  ---@type string[]
+  local reload_plugin_names = vim
+    .iter(self.config.reload_lazy_plugins)
+    -- 将所有类型的 plugin 转换为同一类型
+    -- 当 plugins 为 list 时 v=nil
+    :map(function(k, v)
+      ---@type misel.ReloadLazyPlugin
+      local plugin
+      -- list
+      if v == nil then
+        -- 未指定任何环境变量
+        if type(k) == "string" then
+          plugin = { name = k }
+        -- table
+        else
+          assert(type(k) ~= "table", "invalid plugin type: " .. vim.inspect(k))
+          plugin = k
+        end
+      -- table
+      else
+        if vim.islist(v) then
+          plugin = { name = k, listen_envs = v }
+        else
+          assert(type(v) ~= "table", "invalid plugin type: " .. vim.inspect(v))
+          v.name = k
+          plugin = v
+        end
+      end
+      -- vim.notify(
+      --   ("o=%s, p=%s, v=%s"):format(vim.inspect(o or {}), vim.inspect(p or ""), vim.inspect((v or ""))),
+      --   log_levels.INFO
+      -- )
+      return plugin
+    end)
+    ---@param o misel.ReloadLazyPlugin
+    :filter(function(o)
+      return self.last_plugin_env:is_reload(o, self.prev_env or {}, curr_envs)
+    end)
+    ---@param o misel.ReloadLazyPlugin
+    :map(function(o)
+      return o.name
+    end)
+    :totable()
+
+  if #reload_plugin_names <= 0 then
+    return
+  end
+
+  local req_ok, lazy = pcall(require, "lazy")
+  if not req_ok then
+    vim.notify("Not found lazy for reload_lazy_plugins=" .. vim.inspect(reload_plugin_names), log_levels.WARN)
+    return
+  end
+  local opts = {
+    ---@type string[] | LazyPlugin[]
+    plugins = reload_plugin_names,
+  }
+  vim.schedule(function()
+    lazy.reload(opts)
+  end)
 end
 
 ---@param pathstr string
@@ -180,18 +305,24 @@ function MiseEnvState:load_mise_env()
   self.loading_cwd = cwd
 
   vim.notify(("Loading mise env in %s"):format(cwd), log_levels.INFO)
-  local mise_env, mise_env_err = self:get_consistent_mise_env()
-  if not mise_env then
+  local curr_mise_env, mise_env_err = self:get_consistent_mise_env()
+  if not curr_mise_env then
     vim.notify(mise_env_err or "", log_levels.ERROR)
     return
   end
 
   -- 去除重复的 paths 避免多次切换目录导致的 PATH 过大的问题
-  if mise_env.PATH then
-    mise_env.PATH = deduplicate_pathstr(mise_env.PATH)
+  if curr_mise_env.PATH then
+    curr_mise_env.PATH = deduplicate_pathstr(curr_mise_env.PATH)
   end
+
+  -- 如果两个目录的环境变量一样就不切换了
+  if vim.deep_equal(curr_mise_env, self.prev_env) then
+    return
+  end
+
   -- 配置 mise 环境变量到 vim.env
-  for name, value in pairs(mise_env) do
+  for name, value in pairs(curr_mise_env) do
     env[name] = value
   end
 
@@ -200,14 +331,18 @@ function MiseEnvState:load_mise_env()
     for name, _ in pairs(self.prev_env) do
       -- 如果之前的环境变量不再存在，则从 vim.env 中删除
       -- 可以避免提前移除关键环境变量如 PATH 导致问题，其它存在的变量后续覆盖即可
-      if mise_env[name] == nil then
+      if curr_mise_env[name] == nil then
         env[name] = nil
       end
     end
   end
 
+  if self.prev_env then
+    self:reload_lazy_plugins(curr_mise_env)
+  end
+
   -- 保存状态
-  self.prev_env = mise_env
+  self.prev_env = curr_mise_env
   self.prev_cwd = cwd
   self.loading_cwd = nil
 end
