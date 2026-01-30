@@ -351,12 +351,13 @@ function MiseEnvState:load_mise_env()
   -- 保存状态
   self.prev_env = curr_mise_env
   self.prev_cwd = cwd
-  self.loading_cwd = nil
 end
 
 function MiseEnvState:load_env()
   nio.run(function()
     self:load_mise_env()
+    -- 清空
+    self.loading_cwd = nil
   end)
 end
 
