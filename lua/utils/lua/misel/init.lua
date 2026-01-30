@@ -12,6 +12,7 @@ local M = {}
 ---@class misel.ReloadLazyPluginOpts
 ---@field listen_envs? string[]
 ---@field is_reload? fun(prev_envs:table<string, string>, curr_envs:table<string,string>):boolean
+---@field reload_on_removal? boolean
 
 ---@class misel.ReloadLazyPlugin: misel.ReloadLazyPluginOpts
 ---@field name string
@@ -22,6 +23,7 @@ local M = {}
 ---@field load_env_immediately? boolean
 ---@field bin_path? string
 ---@field reload_lazy_plugins? misel.ReloadLazyPlugins
+---@field reload_on_removal? boolean 当 env 被移除时也重载
 
 ---@class misel.LastPluginEnv
 ---@field plugin_envs table<string, string[]>
@@ -56,10 +58,12 @@ function LastPluginEnv:is_reload(plugin, prev_envs, curr_envs)
   end
 
   local is_reload = false
+  local is_removal = plugin.reload_on_removal
   for _, env_name in ipairs(plugin.listen_envs) do
     local curr_val = curr_envs[env_name]
-    -- 如果当前变量存在且被修改了则 加载
-    if curr_val ~= nil and curr_val ~= last_p_env[env_name] then
+    local last_val = last_p_env[env_name]
+    -- 重载 如果当前变量存在且修改/增加了 如果被移除了则考虑 is_removal 才重载
+    if curr_val ~= last_val and (curr_val ~= nil or is_removal) then
       last_p_env[env_name] = curr_val
       is_reload = true
     end
@@ -72,6 +76,7 @@ local default_config = {
   load_env_immediately = false,
   bin_path = "mise",
   reload_lazy_plugins = {},
+  reload_on_removal = false,
 }
 
 ---@class misel.EnvState
@@ -123,6 +128,10 @@ function MiseEnvState:reload_lazy_plugins(curr_envs)
           v.name = k
           plugin = v
         end
+      end
+      -- 默认值
+      if plugin.reload_on_removal == nil then
+        plugin.reload_on_removal = self.config.reload_on_removal
       end
       -- vim.notify(
       --   ("o=%s, p=%s, v=%s"):format(vim.inspect(o or {}), vim.inspect(p or ""), vim.inspect((v or ""))),
@@ -337,9 +346,7 @@ function MiseEnvState:load_mise_env()
     end
   end
 
-  if self.prev_env then
-    self:reload_lazy_plugins(curr_mise_env)
-  end
+  self:reload_lazy_plugins(curr_mise_env)
 
   -- 保存状态
   self.prev_env = curr_mise_env
