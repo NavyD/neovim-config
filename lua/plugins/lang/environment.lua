@@ -11,12 +11,8 @@ return {
     lazy = false,
     priority = 100,
     cond = vim.fn.executable("mise") == 1,
-    opts_extend = { "reload_lazy_plugins" },
     ---@type misel.EnvOpts
-    opts = {
-      load_env_immediately = vim.env.MISE_SHELL == nil,
-      reload_lazy_plugins = { ["mason.nvim"] = { "MASON_GITHUB_DOWNLOAD_URL_TEMPLATE" } },
-    },
+    opts = { load_env_immediately = vim.env.MISE_SHELL == nil },
   },
   {
     -- The most sophisticated all-in-one toolkit to work with .env files and environment variables in NeoVim

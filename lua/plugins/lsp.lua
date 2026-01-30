@@ -2,6 +2,14 @@
 ---@type LazyPluginSpec[]
 return {
   {
+    "misel",
+    optional = true,
+    ---@type misel.EnvOpts
+    opts = {
+      reload_lazy_plugins = { ["mason.nvim"] = { "MASON_GITHUB_DOWNLOAD_URL_TEMPLATE" } },
+    },
+  },
+  {
     "mason-org/mason.nvim",
     optional = true,
     -- https://github.com/mason-org/mason.nvim#default-configuration

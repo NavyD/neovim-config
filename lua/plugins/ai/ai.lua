@@ -136,6 +136,16 @@ end
 ---@type LazyPluginSpec[]
 return {
   {
+    "misel",
+    optional = true,
+    ---@type misel.EnvOpts
+    opts = {
+      reload_lazy_plugins = {
+        ["minuet-ai.nvim"] = { "MINUET_PROVIDER_DEEPSEEK_API_KEY", "MINUET_PROVIDER_OLLAMA_BASE_URL" },
+      },
+    },
+  },
+  {
     "LazyVim/LazyVim",
     ---@module 'lazyvim'
     ---@type LazyVimOptions
