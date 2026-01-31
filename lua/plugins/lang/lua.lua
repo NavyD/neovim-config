@@ -1,4 +1,5 @@
-local enable_luals_or_emmyluals = true
+-- NOTE: require('xxx'), vim.iter():map 等无法补全
+local emmyluals_enabled = false
 
 -- feature: emmylua-analyzer support
 -- https://github.com/folke/lazydev.nvim/issues/86
@@ -12,6 +13,9 @@ return {
   { "LuaCATS/openresty", name = "lua-openresty-types", lazy = true },
   {
     "folke/lazydev.nvim",
+    -- NOTE: 当使用 lazydev emmyluals 时会导致 diagnostics 无法显示，所以禁用，
+    -- 使用 .emmyrc.json 配置文件代替
+    cond = not emmyluals_enabled,
     opts_extend = { "library" },
     ---@module 'lazydev'
     ---@type lazydev.Config
@@ -26,50 +30,45 @@ return {
     },
   },
   {
-    "folke/lazydev.nvim",
+    "saghen/blink.cmp",
     optional = true,
-    -- 由于 emmylua_ls 不包括 luals 内置（过时）addons，需要移除所有包括 `${3rd}` 的路径
-    -- https://luals.github.io/wiki/addons/#built-in-addons
-    ---@param opts lazydev.Config
+    ---@module 'blink.cmp'
+    ---@param opts blink.cmp.Config
     opts = function(_, opts)
-      if enable_luals_or_emmyluals then
-        return
+      if emmyluals_enabled then
+        -- 移除 lazydev 的 blink 配置
+        -- https://www.lazyvim.org/extras/coding/blink#blinkcmp-2
+        opts.sources.providers.lazydev = nil
+        opts.sources.per_filetype.lua = nil
       end
-      opts.library = vim.tbl_filter(function(e)
-        local ty = type(e)
-        local path = ""
-        if ty == "string" then
-          path = e
-        elseif ty == "table" then
-          path = e.path
-        end
-        return not string.find(path, "${3rd}", 1, true)
-      end, opts.library or {})
     end,
   },
   {
     "neovim/nvim-lspconfig",
     ---@type LazyVimLspOpts
+    ---@diagnostic disable-next-line
     opts = {
       servers = {
         -- 禁用 lua ls
-        lua_ls = { enabled = enable_luals_or_emmyluals },
+        -- FIXME: bug: Workspace libraries not loaded on first buffer with lua_ls 3.17.0
+        -- https://github.com/folke/lazydev.nvim/issues/136
+        lua_ls = { enabled = not emmyluals_enabled },
         emmylua_ls = {
-          enabled = not enable_luals_or_emmyluals,
-          settings = {
-            -- https://github.com/god464/nvim/blob/f35ab158d7295e89e389244e474806e05fdb5687/.emmyrc.json
-            -- https://github.com/EmmyLuaLs/emmylua-analyzer-rust/blob/main/docs/config/emmyrc_json_EN.md
-            Lua = {
-              runtime = { version = "LuaJIT" },
-              -- 如果加载所有的 lua 文件会导致内存过大通常能达到 1GB 以上，
-              -- 使用 lazydev.nvim 懒加载可以避免这个问题
-              workspace = {
-                -- library = { "$VIMRUNTIME", "${3rd}/luv/library", vim.fs.joinpath(vim.fn.stdpath("data"), "lazy") },
-                -- library = { vim.fs.joinpath(vim.fn.stdpath("data"), "lazy") },
-              },
-              strict = { typeCall = true, arrayIndex = true },
-            },
-          },
+          enabled = emmyluals_enabled,
+          -- settings = {
+          --   -- https://github.com/god464/nvim/blob/f35ab158d7295e89e389244e474806e05fdb5687/.emmyrc.json
+          --   -- https://github.com/EmmyLuaLs/emmylua-analyzer-rust/blob/main/docs/config/emmyrc_json_EN.md
+          --   Lua = {
+          --     runtime = { version = "LuaJIT" },
+          --     -- 如果加载所有的 lua 文件会导致内存过大通常能达到 1GB 以上，
+          --     -- 使用 lazydev.nvim 懒加载可以避免这个问题
+          --     workspace = {
+          --       library = { "$VIMRUNTIME", "${3rd}/luv/library", vim.fs.joinpath(vim.fn.stdpath("data"), "lazy") },
+          --       -- library = { vim.fs.joinpath(vim.fn.stdpath("data"), "lazy"), vim.env.VIMRUNTIME },
+          --     },
+          --     strict = { typeCall = true, arrayIndex = true },
+          --   },
+          -- },
         },
       },
     },
