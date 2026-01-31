@@ -68,7 +68,8 @@ local function get_minuet_provider_presets()
           -- Can't get qwen3-coder:30b from a local ollama to work
           -- https://github.com/milanglacier/minuet-ai.nvim/issues/125#issuecomment-3724763618
           end_point = ollama_base_url and ollama_base_url .. "/v1/chat/completions" or "",
-          model = "sweepai/sweep-next-edit:latest",
+          -- model = "sweepai/sweep-next-edit:latest",
+          model = "hf.co/sweepai/sweep-next-edit-0.5B:latest",
           -- only send the request every x milliseconds, use 0 to disable throttle.
           throttle = 800,
           -- debounce the request in x milliseconds, set to 0 to disable debounce
