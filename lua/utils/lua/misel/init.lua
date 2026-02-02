@@ -219,28 +219,13 @@ local function get_mise_env(bin_path, cwd)
   return env_o, nil
 end
 
--- Error executing callback:
--- .../AppData/Local/nvim-data/lazy/nvim-nio/lua/nio/tasks.lua:100: Async task failed without callback: The coroutine failed with this message:
--- vim/_options.lua:157: E5560: Vimscript function "setenv" must not be called in a fast event context
----@async
----@param name string
----@return string?
-local function getenv(name)
-  local future = nio_ctrl.future()
-  vim.schedule(function()
-    future.set(env[name])
-  end)
-  return future:wait()
-end
-
----@async
 ---@param ... string|string[]
 ---@return table<string, string>
 local function getenvs(...)
   local envs = {}
   local names = vim.iter({ ... }):flatten(math.huge):totable()
   for _, name in ipairs(names) do
-    envs[name] = getenv(name)
+    envs[name] = os.getenv(name)
   end
   return envs
 end
@@ -277,6 +262,34 @@ function MiseEnvState:get_consistent_mise_env()
     vim.notify(("Re-acquiring mise env due to variable change: %s"):format(diffstr), log_levels.WARN)
     prev_envs = curr_envs
   end
+end
+
+-- Error executing callback:
+-- .../AppData/Local/nvim-data/lazy/nvim-nio/lua/nio/tasks.lua:100: Async task failed without callback: The coroutine failed with this message:
+-- vim/_options.lua:157: E5560: Vimscript function "setenv" must not be called in a fast event context
+---@param curr_env table<string, string>
+---@async
+function MiseEnvState:set_mise_env(curr_env)
+  local event = nio_ctrl.event()
+  -- 配置 mise 环境变量到 vim.env
+  vim.schedule(function()
+    for name, value in pairs(curr_env) do
+      env[name] = value
+    end
+
+    -- 移除之前的环境变量
+    if self.prev_env then
+      for name, _ in pairs(self.prev_env) do
+        -- 如果之前的环境变量不再存在，则从 vim.env 中删除
+        -- 可以避免提前移除关键环境变量如 PATH 导致问题，其它存在的变量后续覆盖即可
+        if curr_env[name] == nil then
+          env[name] = nil
+        end
+      end
+    end
+    event.set()
+  end)
+  event.wait()
 end
 
 ---@async
@@ -329,22 +342,7 @@ function MiseEnvState:load_mise_env()
   if vim.deep_equal(curr_mise_env, self.prev_env) then
     return
   end
-
-  -- 配置 mise 环境变量到 vim.env
-  for name, value in pairs(curr_mise_env) do
-    env[name] = value
-  end
-
-  -- 移除之前的环境变量
-  if self.prev_env then
-    for name, _ in pairs(self.prev_env) do
-      -- 如果之前的环境变量不再存在，则从 vim.env 中删除
-      -- 可以避免提前移除关键环境变量如 PATH 导致问题，其它存在的变量后续覆盖即可
-      if curr_mise_env[name] == nil then
-        env[name] = nil
-      end
-    end
-  end
+  self:set_mise_env(curr_mise_env)
 
   self:reload_lazy_plugins(curr_mise_env)
 
