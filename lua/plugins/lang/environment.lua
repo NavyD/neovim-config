@@ -5,11 +5,8 @@ return {
     "misel",
     dir = vim.fs.joinpath(vim.fn.stdpath("config"), "lua/utils"),
     dependencies = { "nvim-neotest/nvim-nio" },
-    -- 尽量提前加载环境变量让 lazy 插件也能使用，但这很可能无效，因为启动
-    -- `mise env` 也需要不少时间，除非使用环境变量的插件是 lazy 且在 spec
-    -- 中不应该直接读取环境变量，而是等到启用插件时读取即要使用函数才有效。
-    lazy = false,
-    priority = 100,
+    lazy = true,
+    event = "VeryLazy",
     cond = vim.fn.executable("mise") == 1,
     ---@type misel.EnvOpts
     opts = { load_env_immediately = vim.env.MISE_SHELL == nil },
