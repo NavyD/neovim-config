@@ -211,4 +211,10 @@ return {
       require("markview").setup(opts)
     end,
   },
+  {
+    "neovim/nvim-lspconfig",
+    optional = true,
+    ---@type LazyVimLspOpts
+    opts = { servers = { harper_ls = { filetypes = { "markdown" } } } },
+  },
 }

@@ -16,6 +16,7 @@
 ---@module 'lazyvim.plugins.lsp'
 ---@class LazyVimLspOpts: PluginLspOpts
 ---@field servers? table<string, lazyvim.lsp.Config|boolean>
+---@field setup? table<string, fun(server:string, opts: vim.lsp.Config):boolean?>
 
 ---@module 'mason'
 ---@class LazyVimMasonOpts: MasonSettings
