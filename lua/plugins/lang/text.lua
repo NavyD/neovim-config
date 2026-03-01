@@ -47,10 +47,4 @@ return {
       },
     },
   },
-  {
-    -- A Neovim plugin that creates a hex editing mode.
-    -- https://github.com/DamianVCechov/hexview.nvim
-    "DamianVCechov/hexview.nvim",
-    opts = {},
-  },
 }
