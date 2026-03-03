@@ -29,16 +29,9 @@ vim.filetype.add({
 })
 
 local os_uname = vim.uv.os_uname()
--- 由于 systemd-lsp 未预编译 linux aarch64，所以不支持从 mason 下载
-local systemd_lsp_enabled = os_uname.sysname ~= "Linux"
-  or os_uname.machine ~= "aarch64"
-  -- 注意在 wsl 中耗时可达 80ms
-  -- executable() is slow on WSL
-  -- https://github.com/neovim/neovim/issues/31506
-  or vim.fn.executable("systemd-lsp") == 1
 
 ---@module 'lazy'
----@type LazyPluginSpec[]
+---@type LazySpec
 return {
   {
     -- syntax highlighting and filetype detection for systemd unit files
@@ -48,11 +41,17 @@ return {
   {
     "neovim/nvim-lspconfig",
     ---@type LazyVimLspOpts
-    opts = not systemd_lsp_enabled and {} or {
+    opts = {
       servers = {
         -- language server for systemd unit files - embedded documentation + complete LSP implementation in rust.
         -- https://github.com/JFryy/systemd-lsp
         systemd_lsp = {
+          -- 由于 systemd-lsp 未预编译 linux aarch64，所以不支持从 mason 下载
+          -- 注意在 wsl 中耗时可达 80ms
+          -- executable() is slow on WSL
+          -- https://github.com/neovim/neovim/issues/31506
+          mason = os_uname.sysname ~= "Linux" or os_uname.machine ~= "aarch64",
+          -- enabled = vim.fn.executable("systemd-lsp") == 1,
           root_dir = function(bufnr, on_dir)
             local fname = vim.api.nvim_buf_get_name(bufnr)
 
@@ -88,18 +87,11 @@ return {
     },
   },
   {
-    "mason-org/mason.nvim",
-    -- Systemd Linter
-    -- https://github.com/priv-kweihmann/systemdlint
-    ---@type LazyVimMasonOpts
-    opts = { ensure_installed = { "systemdlint" } },
-  },
-  {
     "mfussenegger/nvim-lint",
     ---@type LazyVimLintOpts
     opts = {
       linters_by_ft = {
-        systemd = { "systemdlint", "systemd-analyze" },
+        systemd = { "systemd-analyze" },
       },
     },
   },
