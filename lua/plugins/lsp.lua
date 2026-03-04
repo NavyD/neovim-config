@@ -1,12 +1,14 @@
+local mason_gh_url_tmpl_name = "MASON_GITHUB_DOWNLOAD_URL_TEMPLATE"
+
 ---@module 'lazy'
----@type LazyPluginSpec[]
+---@type LazySpec
 return {
   {
     "misel",
     optional = true,
     ---@type misel.EnvOpts
     opts = {
-      reload_lazy_plugins = { ["mason.nvim"] = { "MASON_GITHUB_DOWNLOAD_URL_TEMPLATE" } },
+      reload_lazy_plugins = { ["mason.nvim"] = { mason_gh_url_tmpl_name } },
     },
   },
   {
@@ -20,7 +22,7 @@ return {
       opts.github = opts.github or {}
       -- 默认 `https://github.com/%s/releases/download/%s/%s`
       -- 通常可配置为 `https://gh-proxy.com/https://github.com/%s/releases/download/%s/%s`
-      opts.github.download_url_template = vim.env.MASON_GITHUB_DOWNLOAD_URL_TEMPLATE
+      opts.github.download_url_template = vim.env[mason_gh_url_tmpl_name]
     end,
   },
   {
