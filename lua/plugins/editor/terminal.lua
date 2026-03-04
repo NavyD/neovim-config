@@ -1,5 +1,5 @@
 ---@module 'lazy'
----@type LazyPluginSpec[]
+---@type LazySpec
 return {
   {
     -- [No worry about nested Nvim in Nvim terminal](https://github.com/brianhuster/unnest.nvim)
@@ -24,6 +24,18 @@ return {
             -- 也可以仅使用 height >= 1 的固定大小
             vim.g.Snacks_terminal_height = vim.api.nvim_win_get_height(w.win) / vim.o.lines
           end,
+        },
+      },
+      lazygit = {
+        win = {
+          keys = {
+            -- 在 lazyvim 提交中移除了 `<c-/>` 隐藏 terminal 实际是 lazygit 的快捷键
+            -- 参考下面的 PR 恢复 lazygit 的快捷键
+            -- NOTE: fix(terminal): partially revert previous mappings #6770
+            -- https://github.com/LazyVim/LazyVim/pull/6770
+            hide_slash = { "<C-/>", "hide", desc = "Hide Terminal", mode = { "t", "n" } },
+            hide_underscore = { "<c-_>", "hide", desc = "which_key_ignore", mode = { "t", "n" } },
+          },
         },
       },
     },
