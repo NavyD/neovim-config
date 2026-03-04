@@ -3,7 +3,6 @@
 return {
   {
     "neovim/nvim-lspconfig",
-    opts_extend = { "servers.harper_ls.filetypes" },
     ---@type LazyVimLspOpts
     opts = {
       servers = {
