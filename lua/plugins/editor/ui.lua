@@ -1,5 +1,5 @@
 ---@module 'lazy'
----@type LazyPluginSpec[]
+---@type LazySpec
 return {
   {
     "nvim-mini/mini.animate",
@@ -34,5 +34,15 @@ return {
       scope = "file",
       editorconfig = true,
     },
+  },
+  {
+    ---[A Neovim plugin that displays interactive vertical scrollbars and signs.](https://github.com/dstein64/nvim-scrollview)
+    "dstein64/nvim-scrollview",
+    -- 参考github相关仓库，或使用`VeryLazy`事件，否则无效
+    event = { "BufReadPost", "BufAdd", "BufNewFile" },
+    keys = {
+      { "<leader>uR", "<cmd>ScrollViewToggle<cr>", desc = "Toggle Scroll View" },
+    },
+    opts = {},
   },
 }
