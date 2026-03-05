@@ -26,7 +26,9 @@ return {
           end,
         },
       },
-      lazygit = {
+      -- 避免在 terminal 打开时按键会打开另一个新的 terminal 窗口
+      -- 如 ansiblels 目录切换时
+      terminal = {
         win = {
           keys = {
             -- 在 lazyvim 提交中移除了 `<c-/>` 隐藏 terminal 实际是 lazygit 的快捷键
