@@ -54,6 +54,7 @@ return {
     -- A smart picker for Snacks.nvim that trains a neural network with your file picking preferences.
     -- https://github.com/dtormoen/neural-open.nvim
     "dtormoen/neural-open.nvim",
+    version = "*",
     dependencies = {
       {
         "folke/snacks.nvim",
