@@ -26,6 +26,10 @@ return {
         { path = "busted-types/library", words = { "describe" } },
         { path = "wezterm-types", mods = { "wezterm" } },
         { path = "lua-openresty-types/library", words = { "ngx" } },
+        -- nvim-lspconfig 允许使用 ---@type lspconfig.settings.basedpyright
+        -- 这种方式配置类型提示
+        -- https://github.com/neovim/nvim-lspconfig#lsp-settings-type-annotations
+        { path = "nvim-lspconfig", words = { "lspconfig" } },
       },
     },
   },
@@ -52,7 +56,11 @@ return {
         -- 禁用 lua ls
         -- FIXME: bug: Workspace libraries not loaded on first buffer with lua_ls 3.17.0
         -- https://github.com/folke/lazydev.nvim/issues/136
-        lua_ls = { enabled = not emmyluals_enabled },
+        lua_ls = {
+          enabled = not emmyluals_enabled,
+          ---@type lspconfig.settings.lua_ls
+          settings = {},
+        },
         emmylua_ls = {
           enabled = emmyluals_enabled,
           -- settings = {
