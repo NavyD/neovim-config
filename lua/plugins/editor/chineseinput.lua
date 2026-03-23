@@ -1,8 +1,3 @@
--- 设置venv路径
--- if true then
---   return {}
--- end
-
 ---@param msg string
 local function log_error(msg)
   vim.notify(msg, vim.log.levels.ERROR)
@@ -12,39 +7,18 @@ local function log_info(msg)
   vim.notify(msg, vim.log.levels.INFO)
 end
 
-local data_dir = vim.fn.stdpath("data")
-if type(data_dir) == "table" then
-  log_error("Found multiple data dirs: " .. vim.inspect(data_dir))
-  return
-end
-local venv_home = vim.fs.joinpath(data_dir, ".venv")
-local venv_py_bin = vim.fs.joinpath(venv_home, jit.os == "Windows" and "Scripts/python.exe" or "bin/python3")
-local py_binname = vim.fs.basename(venv_py_bin)
--- fix: Vimscript function must not be called in a lua loop callback
-local py_bin = vim.fn.exepath(py_binname) or py_binname
-
----@param plugin_dir string
----@return string
----@return string
-local function get_pylib_path(plugin_dir)
-  local build_dir = vim.fs.joinpath(plugin_dir, "pythonx")
-  -- jieba so库目录
-  -- https://github.com/kkew3/jieba.vim/issues/10#issuecomment-2565322025
-  local pyd_path = vim.fs.joinpath(build_dir, "jieba_vim/jieba_vim_rs") .. (jit.os == "Windows" and ".pyd" or ".so")
-  local pyd_path_tmp = pyd_path .. ".bak"
-  return pyd_path, pyd_path_tmp
-end
-
 ---@diagnostic disable: unused-function
 ---@param plugin LazyPlugin
 local function build_jieba_co(plugin)
-  if vim.fn.executable(py_binname) ~= 1 then
-    log_error("Not found " .. py_binname)
+  if vim.fn.executable("curl") ~= 1 then
+    log_error("Not found curl for jieba_vim")
     return
   end
 
   -- jieba so库目录
-  local pylib_path, pylib_tmp_path = get_pylib_path(plugin.dir)
+  local lib_name = "jieba_vim_rs" .. (jit.os == "Windows" and ".dll" or ".so")
+  local lib_path = vim.fs.joinpath(plugin.dir, "lua/jieba_vim", lib_name)
+  local lib_path_tmp = lib_path .. ".bak"
 
   local git = require("utils.git")
   local tag_name = plugin.tag
@@ -58,24 +32,22 @@ local function build_jieba_co(plugin)
   end
 
   local pat = string.lower(jit.arch .. "-" .. jit.os)
-  local url_filename = "/jieba_vim_rs-"
+  local url_filename = "jieba_vim_rs-"
   if pat == "x64-linux" then
-    url_filename = url_filename .. "x86_64-unknown-linux-gnu.so"
+    url_filename = url_filename .. "x86_64-unknown-linux-gnu-lua51.so"
   elseif pat == "x64-windows" then
-    url_filename = url_filename .. "x86_64-pc-windows-msvc.dll"
+    url_filename = url_filename .. "x86_64-pc-windows-msvc-lua51.dll"
   elseif pat == "arm64-linux" then
-    url_filename = url_filename .. "aarch64-unknown-linux-gnu.so"
+    url_filename = url_filename .. "aarch64-unknown-linux-gnu-lua51.so"
   else
     log_error("Unsupported arch " .. pat)
     return
   end
 
-  local build_args = {
-    "curl",
-    "-fsSLo",
-    pylib_tmp_path,
-    "https://github.com/kkew3/jieba.vim/releases/download/" .. tag_name .. url_filename,
-  }
+  local gh_url_fmt = os.getenv("MASON_GITHUB_DOWNLOAD_URL_TEMPLATE") or "https://github.com/%s/releases/download/%s/%s"
+  local gh_url = gh_url_fmt:format("kkew3/jieba.vim", tag_name, url_filename)
+
+  local build_args = { "curl", "-fsSLo", lib_path_tmp, gh_url }
   log_info("Building jieba.vim with args: " .. table.concat(build_args, " "))
   local process = require("utils.process")
   local curl_sc = process.run_co(build_args)
@@ -84,29 +56,11 @@ local function build_jieba_co(plugin)
     return
   end
 
-  if not vim.uv.fs_stat(venv_py_bin) then
-    local create_venv_args = { py_bin, "-m", "venv", venv_home }
-    log_info("Creating python venv in " .. venv_home .. " with args: " .. table.concat(create_venv_args, " "))
-    local venv_sc, venv_err = process.run_co(create_venv_args)
-    if venv_sc.code ~= 0 then
-      log_error("Failed to run `" .. table.concat(create_venv_args, " ") .. "`: " .. (venv_err or ""))
-      return
-    end
-
-    local pip_inst_args = { venv_py_bin, "-m", "pip", "install", "pynvim" }
-    log_info("pip installing with args: " .. table.concat(pip_inst_args, " "))
-    local pip_sc, pip_err = process.run_co(pip_inst_args)
-    if pip_sc.code ~= 0 then
-      log_error("Failed to run `" .. table.concat(pip_inst_args, "") .. ": " .. (pip_err or ""))
-      return
-    end
-  end
-
   -- TODO: 移动tmp到Pyd，避免init时无法加载
   -- 在加载前将 tmp 文件移动为实际 pyd 文件，避免加载后无法删除
-  log_info("Moving " .. pylib_tmp_path .. " to " .. pylib_path)
-  os.rename(pylib_tmp_path, pylib_path)
-  os.remove(pylib_tmp_path)
+  log_info("Moving " .. lib_path_tmp .. " to " .. lib_path)
+  os.rename(lib_path_tmp, lib_path)
+  os.remove(lib_path_tmp)
 end
 
 ---@module 'lazy.types'
@@ -115,11 +69,8 @@ return {
   {
     -- [基于 jieba 的 Vim 按词跳转插件](https://github.com/kkew3/jieba.vim)
     "kkew3/jieba.vim",
-    -- 禁止自动升级 使用 `*` 无法获取 git tag 版本
-    -- version = "*",
-    tag = "v1.0.6",
+    version = "2",
     event = "BufRead",
-    enabled = vim.fn.executable(py_bin) == 1 and not (vim.env.PREFIX and string.find(vim.env.PREFIX, "com.termux")),
     ---@type LazySpec[]
     dependencies = {
       -- https://github.com/nvim-neotest/nvim-nio
@@ -134,13 +85,7 @@ return {
       end)
     end,
     vscode = true,
-    init = function(plugin)
-      if not vim.uv.fs_stat(venv_py_bin) then
-        log_error("Not found python venv bin in " .. venv_py_bin .. " for plugin " .. plugin.name)
-        return
-      end
-      vim.g.python3_host_prog = venv_py_bin
-
+    init = function()
       vim.g.jieba_vim_lazy = 1
       vim.g.jieba_vim_keymap = 1
     end,
