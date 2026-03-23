@@ -4,6 +4,7 @@ local process = {}
 ---@param opts? vim.SystemOpts
 ---@return vim.SystemCompleted
 ---@see vim.system
+---@async
 ---@diagnostic disable-next-line: unused-function
 -- 参考：https://github.com/nvim-neorocks/rocks-git.nvim/blob/ee748e7264fb9d4d7e5e35eadac258a0066d1d0a/lua/rocks-git/git.lua#L29
 function process.run_co(cmd, opts)
