@@ -75,6 +75,9 @@ return {
     dependencies = {
       -- https://github.com/nvim-neotest/nvim-nio
       { "nvim-neotest/nvim-nio" },
+      -- NOTE: 使用 jieba 重复 `.` 操作要求使用 tpope/vim-repeat 完整支持
+      -- https://github.com/tpope/vim-repeat
+      { "tpope/vim-repeat" },
     },
     ---@module 'lazy'
     ---@param plugin LazyPlugin
@@ -86,7 +89,9 @@ return {
     end,
     vscode = true,
     init = function()
+      -- 是否延迟加载词典直到中文出现
       vim.g.jieba_vim_lazy = 1
+      -- 是否自动启用默认键映射
       vim.g.jieba_vim_keymap = 1
     end,
   },
