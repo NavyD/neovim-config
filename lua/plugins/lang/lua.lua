@@ -26,10 +26,6 @@ return {
         { path = "busted-types/library", words = { "describe" } },
         { path = "wezterm-types", mods = { "wezterm" } },
         { path = "lua-openresty-types/library", words = { "ngx" } },
-        -- nvim-lspconfig 允许使用 ---@type lspconfig.settings.basedpyright
-        -- 这种方式配置类型提示
-        -- https://github.com/neovim/nvim-lspconfig#lsp-settings-type-annotations
-        { path = "nvim-lspconfig", words = { "lspconfig" } },
       },
     },
   },
