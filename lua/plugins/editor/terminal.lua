@@ -28,35 +28,7 @@ return {
       },
       -- 避免在 terminal 打开时按键会打开另一个新的 terminal 窗口
       -- 如 ansiblels 目录切换时
-      terminal = {
-        win = {
-          keys = {
-            -- 在 lazyvim 提交中移除了 `<c-/>` 隐藏 terminal 实际是 lazygit 的快捷键
-            -- 参考下面的 PR 恢复 lazygit 的快捷键
-            -- NOTE: fix(terminal): partially revert previous mappings #6770
-            -- https://github.com/LazyVim/LazyVim/pull/6770
-            hide_slash = { "<C-/>", "hide", desc = "Hide Terminal", mode = { "t", "n" } },
-            hide_underscore = { "<c-_>", "hide", desc = "which_key_ignore", mode = { "t", "n" } },
-          },
-        },
-      },
+      terminal = {},
     },
   },
-  -- {
-  --   -- https://github.com/akinsho/toggleterm.nvim
-  --   "akinsho/toggleterm.nvim",
-  --   version = "*",
-  --   lazy = true,
-  --   ---@module 'toggleterm'
-  --   ---@type ToggleTermConfig
-  --   ---@diagnostic disable: missing-fields
-  --   opts = {
-  --     persist_size = true,
-  --   },
-  --   ---@diagnostic enable: missing-fields
-  --   cmd = { "ToggleTerm", "ToggleTermOpenAll", "ToggleTermCloseAll" },
-  --   keys = {
-  --     { "<C-/>", "<cmd>ToggleTerm<cr>", desc = "Open ToggleTerm" },
-  --   },
-  -- },
 }
