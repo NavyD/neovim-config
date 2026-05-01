@@ -1,5 +1,5 @@
 -- editorconfig-checker-disable
----@type LazyPluginSpec[]
+---@type LazySpec
 return {
   {
     -- [Remove all background colors to make nvim transparent](https://github.com/xiyaowong/transparent.nvim)
@@ -33,29 +33,33 @@ return {
   },
   {
     "catppuccin/nvim",
-    -- [bug: failed to run config for bufferline.nvim #6355](https://github.com/LazyVim/LazyVim/issues/6355#issuecomment-3212986215)
-    ---@param opts CatppuccinOptions
-    opts = function(_, opts)
-      local module = require("catppuccin.groups.integrations.bufferline")
-      if module then
-        module.get = module.get_theme
-      end
-
-      ---@diagnostic disable-next-line: missing-fields
-      opts = {
-        integrations = {
-          -- markview = false,
-          -- diffview = false,
-        },
-      }
-      return opts
-    end,
+    lazy = false,
+  },
+  {
+    "folke/tokyonight.nvim",
+    lazy = false,
   },
   -- Configure LazyVim to load theme
   {
     "LazyVim/LazyVim",
+    ---@type LazyVimOptions
     opts = {
-      -- colorscheme = "catppuccin",
+      -- colorscheme = "catppuccin-nvim",
+      colorscheme = function()
+        local aug = vim.api.nvim_create_augroup("ColorThemePersist", { clear = true })
+        vim.api.nvim_create_autocmd("VimEnter", {
+          group = aug,
+          callback = function()
+            vim.cmd.colorscheme(vim.g.COLOR_SCHEME or "default")
+          end,
+        })
+        vim.api.nvim_create_autocmd("ColorScheme", {
+          group = aug,
+          callback = function(args)
+            vim.g.COLOR_SCHEME = args.match
+          end,
+        })
+      end,
     },
   },
   { -- [auto-dark-mode.nvim](https://github.com/f-person/auto-dark-mode.nvim)
