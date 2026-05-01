@@ -1,26 +1,29 @@
 [tools]
-typos = "1"
-gitleaks = "8"
+typos = "latest"
+gitleaks = "latest"
 python = "3.11"
-"pipx:pre-commit-hooks" = "6"
-"pipx:commitizen" = "4"
-yamllint = "1"
-actionlint = "1"
-stylua = "2"
-"ubi:huacnlee/autocorrect" = "2"
-tombi = "0.6"
-prettier = "3.6"
-markdownlint-cli2 = "0.18"
+"pipx:pre-commit-hooks" = "latest"
+"pipx:commitizen" = "latest"
+yamllint = "latest"
+actionlint = "latest"
+stylua = "latest"
+"github:huacnlee/autocorrect" = "latest"
+tombi = "latest"
+prettier = "latest"
+markdownlint-cli2 = "latest"
 
-[tools."ubi:editorconfig-checker/editorconfig-checker"]
+[tools."github:editorconfig-checker/editorconfig-checker"]
 version = "3"
 matching = "editorconfig-checker"
 
-[tools.'ubi:evilmartians/lefthook']
-version = "1.13"
-rename_exe = 'lefthook{% if os_family() == "windows" %}.exe{% endif %}'
+[tools.'github:evilmartians/lefthook']
+version = "1"
+# rename_exe = 'lefthook{% if os_family() == "windows" %}.exe{% endif %}'
+# mise 自动匹配到了 lefthook_1.13.6_Linux_arm64, 而不是 lefthook_1.13.6_Linux_arm64.tar.gz
+# 所有需要使用 bin 而不是 rename_exe，等待后续迁移 lefthook 到 prek
+bin = "lefthook"
 
-[tools."ubi:luarocks/luarocks"]
+[tools."github:luarocks/luarocks"]
 version = "3.12"
 os = ["windows"]
 
