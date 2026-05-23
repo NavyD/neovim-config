@@ -68,7 +68,11 @@ end
 -- [No Nonsense Neovim Client in Rust](https://github.com/neovide/neovide)
 -- [neovide configuration](https://neovide.dev/configuration.html)
 if vim.g.neovide then
-  vim.o.guifont = "Cascadia Mono,Sarasa Mono SC"
+  vim.o.guifont = "CaskaydiaCove Nerd Font,Sarasa Term SC"
+  -- If set to true, quitting while having unsaved changes will require confirmation. Enabled by default.
+  vim.g.neovide_confirm_quit = true
+  -- determine whether the window size from the previous session or the default size will be used on startup.
+  vim.g.neovide_remember_window_size = true
 
   -- [How Can I Dynamically Change The Scale At Runtime?](https://neovide.dev/faq.html#how-can-i-dynamically-change-the-scale-at-runtime)
   vim.g.neovide_scale_factor = 0.8 -- default 1
@@ -81,4 +85,18 @@ if vim.g.neovide then
   vim.keymap.set("n", "<C-->", function()
     change_scale_factor(1 / 1.25)
   end)
+
+  -- https://neovide.dev/faq.html#how-can-i-use-cmd-ccmd-v-to-copy-and-paste
+  local copy_key = "<S-C-c>"
+  local paste_key = "<S-C-v>"
+  if vim.fn.has("mac") == 1 then
+    copy_key = "<D-c>"
+    paste_key = "<D-v>"
+  end
+  vim.keymap.set("v", copy_key, function()
+    vim.cmd([[normal! "+y]])
+  end, { silent = true, desc = "Copy" })
+  vim.keymap.set({ "n", "i", "v", "c", "t" }, paste_key, function()
+    vim.api.nvim_paste(vim.fn.getreg("+"), true, -1)
+  end, { silent = true, desc = "Paste" })
 end
