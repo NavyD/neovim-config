@@ -9,6 +9,7 @@ end
 
 ---@diagnostic disable: unused-function
 ---@param plugin LazyPlugin
+---@async
 local function build_jieba_co(plugin)
   if vim.fn.executable("curl") ~= 1 then
     log_error("Not found curl for jieba_vim")
@@ -56,11 +57,15 @@ local function build_jieba_co(plugin)
     return
   end
 
+  local auv = require("nio").uv
   -- TODO: 移动tmp到Pyd，避免init时无法加载
   -- 在加载前将 tmp 文件移动为实际 pyd 文件，避免加载后无法删除
   log_info("Moving " .. lib_path_tmp .. " to " .. lib_path)
-  os.rename(lib_path_tmp, lib_path)
-  os.remove(lib_path_tmp)
+  local rename_err, rename_ok = auv.fs_rename(lib_path_tmp, lib_path)
+  if not rename_ok then
+    log_error("Failed to rename " .. lib_path_tmp .. " to " .. lib_path .. " with error: " .. rename_err)
+    return
+  end
 end
 
 ---@module 'lazy.types'
