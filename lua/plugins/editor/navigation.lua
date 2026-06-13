@@ -2,7 +2,7 @@
 -- 参考[Compatibility with vim-yoink or other yank-related plugins #88](https://github.com/aserowy/tmux.nvim/issues/88#issuecomment-2259591730)
 -- 参考https://github.com/moetayuko/nvimrc/blob/master/lua/plugins/tmux.lua
 -- 目前仅替换了按键从`A[lt]`->`C[trl]`
----@type LazyPluginSpec[]
+---@type LazySpec
 return {
   {
     "aserowy/tmux.nvim",
@@ -139,6 +139,25 @@ return {
         desc = "Swaps to the next node down that's indented further than the current node",
         mode = { "n", "v" },
       },
+    },
+  },
+  {
+    -- JSON explorer using Neovim's terminal interface
+    -- https://github.com/Owen-Dechow/videre.nvim
+    "Owen-Dechow/videre.nvim",
+    cmd = "Videre",
+    dependencies = {
+      "Owen-Dechow/graph_view_yaml_parser", -- Optional: add YAML support
+      "Owen-Dechow/graph_view_toml_parser", -- Optional: add TOML support
+      "a-usr/xml2lua.nvim", -- Optional | Experimental: add XML support
+    },
+    ---@module 'videre.config'
+    ---@type VidereConfig
+    opts = {
+      box_style = "sharp",
+    },
+    keys = {
+      { "<leader>cv", "<cmd>Videre<cr>", ft = { "json", "yaml", "toml", "xml" }, desc = "View as graph" },
     },
   },
 }
