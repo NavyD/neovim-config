@@ -1,6 +1,28 @@
 -- 非大写避免被持久化
 local last_inserted_key = "_snacks_terminal_last_inserted"
 
+-- 通过 snacks.terminal 在打开时保存的相关信息获取对应的 tid 作为 key 的一部分从而保证唯一性
+---@param swin snacks.win
+---@return string?
+local function get_snacks_terminal_key(swin)
+  if swin.buf == nil then
+    return nil
+  end
+
+  -- https://github.com/folke/snacks.nvim/pull/2276
+  -- https://github.com/folke/snacks.nvim/blob/882c996cf28183f4d63640de0b4c02ec886d01f2/lua/snacks/terminal.lua#L111
+  local term = vim.b[swin.buf].snacks_terminal
+  if not term then
+    return nil
+  end
+
+  local key = "Snacks_terminal_height"
+  local tid = Snacks.terminal.tid(term.cmd, { cwd = term.cwd, env = term.env, count = term.id })
+  key = key .. "_" .. vim.fn.sha256(tid):sub(1, 8)
+  -- vim.notify("term key=" .. key .. " for tid=" .. tid)
+  return key
+end
+
 ---@module 'lazy'
 ---@type LazySpec
 return {
@@ -16,16 +38,29 @@ return {
     opts = {
       styles = {
         -- NOTE: terminal 的配置会影响 lazygit，必须覆盖
-        lazygit = { height = 0.9, on_close = function() end },
+        lazygit = { height = 0.9 },
         terminal = {
-          height = function(_)
+          height = function(swin)
             -- 使用大写开头可让 sessionoptions globals 持久化变量值
-            return vim.g.Snacks_terminal_height or 0.48
+            local key = get_snacks_terminal_key(swin)
+            local default_height = 0.48
+            if not key then
+              return default_height
+            end
+            local old_height = vim.g[key]
+            if old_height == nil then
+              return default_height
+            end
+            return old_height
           end,
-          on_close = function(w)
-            -- 使用百分比的方法可以在窗口关闭打开时与 resized 事件放大/缩小窗口，
-            -- 也可以仅使用 height >= 1 的固定大小
-            vim.g.Snacks_terminal_height = vim.api.nvim_win_get_height(w.win) / vim.o.lines
+          on_close = function(swin)
+            local key = get_snacks_terminal_key(swin)
+            if key then
+              -- 使用百分比的方法可以在窗口关闭打开时与 resized 事件放大/缩小窗口，
+              -- 也可以仅使用 height >= 1 的固定大小
+              vim.g[key] = vim.api.nvim_win_get_height(swin.win) / vim.o.lines
+              -- vim.notify("Saving terminal key=" .. key .. " height=" .. vim.g[key])
+            end
           end,
           -- on_win = function(term_win)
           --   -- 保持终端最后的编辑模式在下次进入时保持一致
