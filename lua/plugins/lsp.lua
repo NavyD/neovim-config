@@ -30,6 +30,11 @@ return {
     -- https://github.com/oribarilan/lensline.nvim
     "oribarilan/lensline.nvim",
     version = "*", -- or: branch = 'release/1.x' for latest non-breaking updates
+    -- FIXME: [Bug]: Freezes the UI when working in 'partial clone' repository. #86
+    -- https://github.com/oribarilan/lensline.nvim/issues/86
+    -- 禁用该插件等待下面的 PR 合并即可：refactor: async git calls and cache #94
+    -- https://github.com/oribarilan/lensline.nvim/pull/94
+    cond = false,
     event = "LspAttach",
     opts = {
       profiles = {
