@@ -11,6 +11,31 @@ return {
     },
   },
   {
+    -- treesitter syntax highlighting for diffs
+    -- https://github.com/barrettruth/diffs.nvim
+    "barrettruth/diffs.nvim",
+    version = "*",
+    init = function(_)
+      ---@module 'diffs'
+      ---@type diffs.Config
+      ---@diagnostic disable: missing-fields
+      vim.g.diffs = {
+        integrations = {
+          difftastic = true,
+          gitsigns = true,
+        },
+      }
+      ---@diagnostic enable: missing-fields
+    end,
+    keys = {
+      {
+        "<leader>gV",
+        "<cmd>Diff review ++layout=stacked HEAD<cr>",
+        desc = "Toggle stacked diff view for current branch",
+      },
+    },
+  },
+  {
     "lewis6991/gitsigns.nvim",
     optional = true,
     -- NOTE: 下面的是排查过程结论，以作警示
