@@ -4,7 +4,6 @@ local json = vim.json
 local env = vim.env
 
 local nio = require("nio")
-local nio_ctrl = nio.control
 local proc = require("utils.process")
 
 local M = {}
@@ -258,7 +257,7 @@ function MiseEnvState:get_consistent_mise_env()
       return nil, ("Failed to get consistent %s env %s times"):format(env_names, max_count)
     end
 
-    local diffstr = vim.diff(vim.inspect(prev_envs), vim.inspect(curr_envs))
+    local diffstr = vim.text.diff(vim.inspect(prev_envs), vim.inspect(curr_envs))
     vim.notify(("Re-acquiring mise env due to variable change: %s"):format(diffstr), log_levels.WARN)
     prev_envs = curr_envs
   end
@@ -270,26 +269,22 @@ end
 ---@param curr_env table<string, string>
 ---@async
 function MiseEnvState:set_mise_env(curr_env)
-  local event = nio_ctrl.event()
+  nio.scheduler()
   -- 配置 mise 环境变量到 vim.env
-  vim.schedule(function()
-    for name, value in pairs(curr_env) do
-      env[name] = value
-    end
+  for name, value in pairs(curr_env) do
+    env[name] = value
+  end
 
-    -- 移除之前的环境变量
-    if self.prev_env then
-      for name, _ in pairs(self.prev_env) do
-        -- 如果之前的环境变量不再存在，则从 vim.env 中删除
-        -- 可以避免提前移除关键环境变量如 PATH 导致问题，其它存在的变量后续覆盖即可
-        if curr_env[name] == nil then
-          env[name] = nil
-        end
+  -- 移除之前的环境变量
+  if self.prev_env then
+    for name, _ in pairs(self.prev_env) do
+      -- 如果之前的环境变量不再存在，则从 vim.env 中删除
+      -- 可以避免提前移除关键环境变量如 PATH 导致问题，其它存在的变量后续覆盖即可
+      if curr_env[name] == nil then
+        env[name] = nil
       end
     end
-    event.set()
-  end)
-  event.wait()
+  end
 end
 
 ---@async
