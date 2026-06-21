@@ -16,7 +16,6 @@ return {
       -- "MeanderingProgrammer/render-markdown.nvim", -- Clean rendering
       "OXY2DEV/markview.nvim", -- Rich rendering with advanced features
     },
-    lazy = false,
     keys = {
       { "<leader>cto", "<cmd>NeovimTips<cr>", desc = "Neovim tips", noremap = true, silent = true },
       { "<leader>cte", "<cmd>NeovimTipsEdit<cr>", desc = "Edit your Neovim tips", noremap = true, silent = true },
@@ -40,5 +39,26 @@ return {
       -- OPTIONAL: Bookmark symbol (default: "🌟 ")
       bookmark_symbol = "🌟 ",
     },
+    lazy = true,
+    init = function()
+      -- 仅在 session 加载后运行
+      -- https://github.com/saxon1964/neovim-tips/blob/1339a0da1ff59fab8cfc07661ef92aa8c7d07f79/lua/neovim_tips/init.lua#L208
+      vim.api.nvim_create_autocmd("SessionLoadPost", {
+        pattern = "*",
+        -- group = vim.api.nvim_create_augroup("NeovimaapiSessionLoadGroup", { clear = true }),
+        once = true,
+        callback = function()
+          local req_ok, utils = pcall(require, "neovim_tips.utils")
+          if not req_ok then
+            return
+          end
+          utils.run_async(require("neovim_tips.loader").load, function(ok, _)
+            if ok then
+              require("neovim_tips.daily_tip").check_and_show()
+            end
+          end)
+        end,
+      })
+    end,
   },
 }
