@@ -1,6 +1,5 @@
 local nio = require("nio")
 local auv = nio.uv
-local afile = nio.file
 -- load nio.file types
 if false then
   local _ = require("vim.uv")
@@ -12,6 +11,10 @@ local log = {}
 ---@param msg string
 ---@param level vim.log.levels
 function log.log(msg, level)
+  -- 检查是否处于 async 中，避免 vim.notify 出现 fast context 问题
+  if nio.current_task() then
+    nio.scheduler()
+  end
   vim.notify(msg, level)
 end
 
@@ -70,19 +73,21 @@ local Persisted = {}
 ---@async
 ---@param path string
 ---@return table?
----@return string?
+---@return string? error_msg 如果文件不存在会返回包含 ENOENT 的字符串
 function Persisted.restore(path)
-  local file, open_err = afile.open(path, "r")
-  if not file then
+  local stat_err, stat = auv.fs_stat(path)
+  if not stat then
+    return nil, stat_err
+  end
+  local open_err, fd = auv.fs_open(path, "r", tonumber("644", 8))
+  if not fd then
     return nil, open_err
   end
-
-  local content, r_err = file.read()
-  file.close()
+  local r_err, content = auv.fs_read(fd, stat.size)
+  auv.fs_close(fd)
   if not content then
     return nil, r_err
   end
-
   -- 如果文件不存在或为空
   if #content <= 0 then
     return {}, nil
@@ -103,17 +108,20 @@ end
 ---@param o any
 ---@return string?
 function Persisted.save(path, o)
-  local file, open_err = afile.open(path, "w+")
-  if not file then
+  local open_err, fd = auv.fs_open(path, "w", tonumber("644", 8))
+  if not fd then
     return open_err
   end
 
   local json_str = json.encode(o)
   -- log.info("Saving object=`" .. json_str .. "` to path " .. path)
-  local w_err = file.write(json_str)
-  file.close()
+  local w_err, w_bytes = auv.fs_write(fd, json_str)
+  auv.fs_close(fd)
   if w_err then
     return w_err
+  end
+  if w_bytes ~= #json_str then
+    return "invalid write byte size=" .. w_bytes .. " for content size=" .. #json_str
   end
   return nil
 end
@@ -136,21 +144,19 @@ local ThemeData = {
 ---@return autotheme.BackgroundThemeData?
 ---@return string?
 function ThemeData.new(path)
-  ---@type autotheme.BackgroundThemeData
-  local obj = {}
-
-  local _, stat = auv.fs_stat(path)
-  if stat then
-    local o, restore_err = Persisted.restore(path)
-    if not o then
+  local obj, restore_err = Persisted.restore(path)
+  if not obj then
+    -- 如果文件不存在时
+    if not restore_err or not restore_err:find("ENOENT") then
       return nil, restore_err
     end
-    obj = o
+    obj = {}
   end
 
   nio.scheduler()
   ---@type autotheme.BackgroundThemeData
   local default = { background = vim.o.background or "dark", dark = {}, light = {} }
+  ---@type autotheme.BackgroundThemeData
   obj = vim.tbl_extend("keep", obj, default)
   return setmetatable(obj, { __index = ThemeData }), nil
 end
