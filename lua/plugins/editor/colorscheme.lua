@@ -1,4 +1,3 @@
--- editorconfig-checker-disable
 ---@type LazySpec
 return {
   {
@@ -39,42 +38,27 @@ return {
     "folke/tokyonight.nvim",
     lazy = false,
   },
-  -- Configure LazyVim to load theme
   {
-    "LazyVim/LazyVim",
-    ---@type LazyVimOptions
-    opts = {
-      -- colorscheme = "catppuccin-nvim",
-      colorscheme = function()
-        local aug = vim.api.nvim_create_augroup("ColorThemePersist", { clear = true })
-        vim.api.nvim_create_autocmd("VimEnter", {
-          group = aug,
-          callback = function()
-            vim.cmd.colorscheme(vim.g.COLOR_SCHEME or "default")
-          end,
-        })
-        vim.api.nvim_create_autocmd("ColorScheme", {
-          group = aug,
-          callback = function(args)
-            vim.g.COLOR_SCHEME = args.match
-          end,
-        })
-      end,
-    },
+    dir = vim.fs.joinpath(vim.fn.stdpath("config"), "lua/utils/autotheme"),
+    dependencies = { "nvim-neotest/nvim-nio" },
+    lazy = false,
+    opts = {},
   },
   { -- [auto-dark-mode.nvim](https://github.com/f-person/auto-dark-mode.nvim)
     "f-person/auto-dark-mode.nvim",
     -- 在termux中无效禁止加载
-    cond = not (vim.env.PREFIX and string.find(vim.env.PREFIX, "com.termux")),
+    -- cond = not (vim.env.PREFIX and string.find(vim.env.PREFIX, "com.termux")),
     ---@module 'auto-dark-mode'
     ---@type AutoDarkModeOptions
     opts = {
       update_interval = 3000,
       set_dark_mode = function()
-        vim.api.nvim_set_option_value("background", "dark", {})
+        require("autotheme").set_theme("dark")
+        -- vim.api.nvim_set_option_value("background", "dark", {})
       end,
       set_light_mode = function()
-        vim.api.nvim_set_option_value("background", "light", {})
+        require("autotheme").set_theme("light")
+        -- vim.api.nvim_set_option_value("background", "light", {})
       end,
     },
   },
