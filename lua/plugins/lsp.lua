@@ -125,12 +125,12 @@ return {
       },
     },
     event = "LspAttach",
-    opts = {
+    opts = function(_, opts)
       -- https://github.com/rachartier/tiny-code-action.nvim#options
       -- 默认使用 difft/delta/vim
-      backend = vim.fn.executable("difft") == 1 and "difftastic"
-        or (vim.fn.executable("delta") == 1 and "delta" or "vim"),
-    },
+      opts.backend = vim.fn.executable("difft") == 1 and "difftastic"
+        or (vim.fn.executable("delta") == 1 and "delta" or "vim")
+    end,
   },
   {
     "neovim/nvim-lspconfig",

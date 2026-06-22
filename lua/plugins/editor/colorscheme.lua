@@ -3,6 +3,7 @@ return {
   {
     -- [Remove all background colors to make nvim transparent](https://github.com/xiyaowong/transparent.nvim)
     "xiyaowong/transparent.nvim",
+    -- Avoid lazy-loading this plugin to ensure the highlight-clearing logic is triggered. The plugin's function runs quickly.
     lazy = false,
     -- https://github.com/lukejoshua/kickstart.nvim/blob/517f04d07eb8403e6f5ad72767a54ed9ac14bb92/lua/plugins/transparent.lua#L6
     config = function()
@@ -30,14 +31,21 @@ return {
       { "<leader>uB", "<cmd>TransparentToggle<cr>", { desc = "Toggle transparency" } },
     },
   },
-  {
-    "catppuccin/nvim",
-    lazy = false,
-  },
-  {
-    "folke/tokyonight.nvim",
-    lazy = false,
-  },
+  -- {
+  --   "LazyVim/LazyVim",
+  --   optional = true,
+  --   ---@type LazyVimConfig
+  --   opts = {
+  --     -- 在启动后首次执行 `colorscheme catppuccin-latte` 等主题切换后 bufferline
+  --     -- 颜色未改变，再次 colorscheme 切换才会生效。这可能是 tokyonight,catppuccin
+  --     -- 需要专门适配，所以这里不会覆盖原 lazyvim 的主题配置
+  --     --- FIXME: [Bug]: highlights are not fully reloaded on ColorScheme autocmd
+  --     --- https://github.com/akinsho/bufferline.nvim/issues/1030
+  --     -- colorscheme = function()
+  --     --   require("tokyonight").load()
+  --     -- end,
+  --   },
+  -- },
   {
     dir = vim.fs.joinpath(vim.fn.stdpath("config"), "lua/utils/autotheme"),
     dependencies = { "nvim-neotest/nvim-nio" },
@@ -46,6 +54,7 @@ return {
   },
   { -- [auto-dark-mode.nvim](https://github.com/f-person/auto-dark-mode.nvim)
     "f-person/auto-dark-mode.nvim",
+    event = "VeryLazy",
     -- 在termux中无效禁止加载
     -- cond = not (vim.env.PREFIX and string.find(vim.env.PREFIX, "com.termux")),
     ---@module 'auto-dark-mode'

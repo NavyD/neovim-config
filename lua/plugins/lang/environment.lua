@@ -7,7 +7,7 @@ return {
     dependencies = { "nvim-neotest/nvim-nio" },
     lazy = true,
     event = "VeryLazy",
-    cond = vim.g.vscode ~= 1 and vim.fn.executable("mise") == 1,
+    cond = vim.g.vscode ~= 1 and (vim.env.MISE_SHELL ~= nil or vim.fn.executable("mise") == 1),
     ---@type misel.EnvOpts
     opts = { load_env_immediately = vim.env.MISE_SHELL == nil },
   },

@@ -20,7 +20,13 @@ return {
         providers = {
           ripgrep = {
             module = "blink-ripgrep",
-            enabled = vim.fn.executable("rg") == 1 or vim.fn.executable("git") == 1,
+            enabled = function()
+              local key = "_blink_provider_ripgrep_enabled"
+              if vim.g[key] == nil then
+                vim.g[key] = vim.fn.executable("rg") == 1 or vim.fn.executable("git") == 1
+              end
+              return vim.g[key]
+            end,
             -- async = true,
             score_offset = -5,
             name = "ripgrep",

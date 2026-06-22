@@ -8,7 +8,6 @@ return {
     ft = "ps1",
     -- 仅在存在 pwsh 时才会运行 pwsh 启动 LSP 服务
     -- 最好使用 pwsh 7+ https://github.com/PowerShell/PowerShellEditorServices#supported-powershell-versions
-    cond = vim.fn.executable("pwsh") == 1,
     dependencies = {
       "mason-org/mason.nvim",
       ---@type LazyVimMasonOpts

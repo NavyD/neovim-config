@@ -7,6 +7,8 @@ return {
   {
     "aserowy/tmux.nvim",
     event = "VeryLazy",
+    -- 如果 tmux 环境变量存在则启用
+    cond = vim.env.TMUX ~= nil,
     opts = {
       navigation = {
         enable_default_keybindings = false,
