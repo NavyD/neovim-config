@@ -186,13 +186,15 @@ function AutoTheme.new(filepath, augroup)
   if not d then
     return nil, d_err
   end
-  local self = setmetatable({
+  ---@type autotheme.AutoTheme
+  local self = {
     data_filepath = filepath,
     themedata = d,
     _background_lock = false,
     _save_theme_delay = 500,
     _set_theme_delay = 10,
-  }, { __index = AutoTheme })
+  }
+  self = setmetatable(self, { __index = AutoTheme })
 
   -- yield 到主线程以使用 vim.api
   nio.scheduler()
