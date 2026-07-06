@@ -336,5 +336,83 @@ local function handle_buf_enter(buf, name)
     end
   end
 end
+---@param user_config? nsuda.Config
+function M.setup(user_config)
+  user_config = user_config or {}
+  config = vim.tbl_deep_extend("force", config, {
+    executable = user_config.executable,
+    noninteractive = user_config.noninteractive,
+    prompt = user_config.prompt,
+    smart_edit = user_config.smart_edit,
+    write_error_handler = user_config.write_error_handler,
+    builders = user_config.builders,
+  })
+
+  if not config.executable then
+    if is_windows then
+      if vim.fn.executable("gsudo") == 1 then
+        config.executable = "gsudo"
+      elseif vim.fn.executable("sudo") == 1 then
+        config.executable = "sudo"
+      else
+        vim.notify("[nsuda] No elevation tool found. Install gsudo: https://github.com/gerardog/gsudo", vim.log.levels.ERROR)
+        return
+      end
+    else
+      config.executable = "sudo"
+    end
+  end
+
+  if not config.builders then
+    config.builders = default_builders
+  end
+
+  suda_group = vim.api.nvim_create_augroup("nsuda", { clear = true })
+
+  vim.api.nvim_create_autocmd("BufReadCmd", {
+    group = suda_group,
+    pattern = "suda://*",
+    callback = function(args)
+      local realpath = args.match:gsub("^suda://", "")
+      handle_suda_read(args.buf, realpath)
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("BufWriteCmd", {
+    group = suda_group,
+    pattern = "suda://*",
+    callback = function(args)
+      local realpath = args.match:gsub("^suda://", "")
+      handle_suda_protocol_write(args.buf, realpath)
+    end,
+  })
+
+  if config.smart_edit then
+    vim.api.nvim_create_autocmd("BufEnter", {
+      group = suda_group,
+      pattern = "*",
+      nested = true,
+      callback = function(args)
+        handle_buf_enter(args.buf, args.match)
+      end,
+    })
+  end
+
+  vim.api.nvim_create_user_command("SudaRead", function(opts)
+    local path = opts.args
+    if path == "" then
+      path = vim.fn.expand("%:p")
+    end
+    vim.cmd("edit suda://" .. vim.fn.fnameescape(path))
+  end, { nargs = "?", complete = "file" })
+
+  vim.api.nvim_create_user_command("SudaWrite", function(opts)
+    local path = opts.args
+    if path == "" then
+      path = vim.fn.expand("%:p")
+    end
+    vim.cmd("write suda://" .. vim.fn.fnameescape(path))
+  end, { nargs = "?", complete = "file" })
+end
 
 return M
