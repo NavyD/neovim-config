@@ -25,18 +25,14 @@ nsuda 是 suda.vim 的 Lua 重写版，优先解决 Windows bug，同时使用 N
 ---@field path   string  目标文件绝对路径
 ---@field buf    integer 当前 buffer number
 
----@class nsuda.CopyCmd
----@field src_to_dst    fun(src: string, dst: string): string[]  源 → 目标复制命令
----@field dst_from_src  fun(src: string, dst: string): string[]  从源提取内容到临时文件的命令
-
 ---@class nsuda.ElevationHandler
---- 与 copy 分离：copy 是纯平台函数，handler 封装提权工具特有的认证行为
----@field executable    string                                 可执行文件名
----@field copy          nsuda.CopyCmd                         该平台的 copy 命令
----@field args          string[]                               附加参数（如 {"-S"}）
----@field needs_password  boolean                              是否支持 stdin 密码
----@field prompt        string?                                密码提示符（needs_password 时生效）
----@field cache_check   string[]?                              缓存探测命令（如 {"-n", "true"}），nil 表示不支持
+---@field get_copy_cmd    fun(src: string, dst: string): string[]  生成 copy 命令（内部判断 Unix/Windows 选 dd 或 cmd /c copy）
+---@field get_args        fun(): string[]                          基本参数
+---@field get_prompt      fun(): string                            密码提示
+---@field needs_password  boolean                                  是否支持 stdin 密码
+---@field cache_check     string[]?                                缓存探测命令，nil = 不支持
+
+---@alias nsuda.Handlers table<string, nsuda.ElevationHandler>
 
 ---@class nsuda.SystemResult
 ---@field code    integer 退出码（0 成功）
@@ -57,7 +53,7 @@ nsuda 是 suda.vim 的 Lua 重写版，优先解决 Windows bug，同时使用 N
 ---  自动检测需提权文件并接管读写。默认 false。
 ---@field write_error_handler?   fun(ctx: nsuda.WriteCtx): boolean
 ---  自定义写入错误判断。默认：匹配 "E212:" + ("permission denied" 或 "operation not permitted")。
----@field handlers?              table<string, nsuda.ElevationHandler>
+---@field handlers?              nsuda.Handlers
 ---  自定义提权工具 handler。默认内置 sudo (Unix) 和 gsudo (Windows)。
 
 ---@class nsuda.Suda
@@ -82,7 +78,7 @@ function M.write(path, lines) end
 ---@return nsuda.SystemResult
 function M.system(cmd, opts) end
 
---- 提权 copy 文件（src→dst）
+--- 提权 copy 文件（通过 handler.get_copy_cmd 生成命令）
 ---@param src  string
 ---@param dst  string
 ---@return nsuda.SystemResult
@@ -97,48 +93,46 @@ function M.copy(src, dst) end
 
 ### 4.1 设计思路
 
-**两个独立维度：**
+Handler 是一组封装提权特有行为的 callable，与平台 copy 命令解耦。
 
 ```
-                    平台 copy（无提权）          提权认证（工具相关）
-                    ┌─────────────────┐     ┌──────────────────────┐
-  Unix              │ dd if=src of=dst │     │ sudo -S / -n         │
-  Windows            │ cmd /c copy /y   │     │ gsudo (UAC)          │
-  Windows Win11      │ cmd /c copy /y   │     │ sudo.exe (UAC/Win11) │
+M.copy(src, dst)   →  调用 handler.get_copy_cmd()  →  内部判断平台返回 dd 或 cmd /c copy
+M.system(cmd)      →  调用 handler.get_args() 组合参数 →  通过 handler 字段驱动认证
 ```
 
-- **Copy 命令**：纯平台函数，与提权工具无关，所有人都用相同的复制方式
-- **ElevationHandler**：封装提权工具的认证行为（密码、缓存探测、额外参数）
-- **组合**：`M.system()` = `handler.executable` + `handler.args` + `cmd`
+- `get_copy_cmd(s, d)` — 生成纯 copy 命令（内部 `vim.uv.os_uname().sysname` 判断平台选择 dd 或 cmd）
+- `get_args()` — 基本参数（如 `{}`, `{"-k"}`, `{"--all"}` 等）
+- `get_prompt()` — 密码提示文本
+- `needs_password` — 是否走 `inputsecret()`
+- `cache_check` — 缓存探测命令，nil = 不支持
 
 ### 4.2 内置 handler
 
 ```lua
-local unix_copy = {
-  src_to_dst   = function(s, d) return { "dd", "if=" .. s, "of=" .. d, "bs=1M" } end,
-  dst_from_src = function(s, d) return { "dd", "if=" .. s, "of=" .. d, "bs=1M" } end,
-}
+-- Unix copy
+local function unix_copy_cmd(s, d)
+  return { "dd", "if=" .. s, "of=" .. d, "bs=1M" }
+end
 
-local win_copy = {
-  src_to_dst   = function(s, d) return { "cmd", "/c", "copy /y", s, d } end,
-  dst_from_src = function(s, d) return { "cmd", "/c", "copy /y", s, d } end,
-}
+-- Windows copy
+local function win_copy_cmd(s, d)
+  return { "cmd", "/c", "copy /y", s, d }
+end
 
-local default_handlers = {
+local defaults = {
   sudo = {
-    executable     = "sudo",
-    copy           = unix_copy,
-    args           = {},
-    needs_password = true,
-    prompt         = "Password: ",
-    cache_check    = { "-n", "true" },
+    get_copy_cmd    = unix_copy_cmd,
+    get_args        = function() return {} end,
+    get_prompt      = function() return config.prompt end,
+    needs_password  = true,
+    cache_check     = { "-n", "true" },
   },
   gsudo = {
-    executable     = "gsudo",
-    copy           = win_copy,
-    args           = {},
-    needs_password = false,
-    -- prompt, cache_check 均为 nil（UAC 无 stdin 密码，无可探测缓存）
+    get_copy_cmd    = win_copy_cmd,
+    get_args        = function() return {} end,
+    get_prompt      = function() return "" end,
+    needs_password  = false,
+    -- cache_check = nil (UAC 无缓存概念)
   },
 }
 ```
@@ -147,45 +141,40 @@ local default_handlers = {
 
 ```
 M.system(cmd, opts):
-  handler = resolve_handler(config.executable)
-  args = { handler.executable } + handler.args + cmd
+  h = resolve_handler(config.executable)
 
-  1. 首次尝试（尽可能避免密码）:
-     effective_args = 若 noninteractive               → args + handler.cache_check 前半段
-                      若 handler.cache_check != nil   → args + handler.cache_check 前缀
-                      否则                              → args
-     r = vim.system(effective_args, { text = true, stdin = opts.stdin }):wait()
-     if r.code == 0 → return r
+  1. 首次尝试（非密码模式）:
+     args = { config.executable } + h.get_args() + cmd
+     若 noninteractive 且 h.cache_check → args 加对应前缀
+     或 h.cache_check != nil → 加 -n 前缀
 
-  2. 尝试利用缓存（Unix sudo 场景）:
-     if handler.needs_password and not noninteractive then
-       cache_r = vim.system({handler.executable, unpack(handler.cache_check)},
-                            { text = true }):wait()
-       if cache_r.code == 0 then
-         -- 缓存有效，重试不带 cache 前缀的完整命令
-         return vim.system(args, { text = true, stdin = opts.stdin }):wait()
-       end
-     end
+     r = vim.system(args, { text = true, stdin = opts.stdin }):wait()
+     r.code == 0 → return r
 
-  3. 交互式密码（仅 handler.needs_password）:
+  2. 缓存探测（仅 h.needs_password 且 h.cache_check）:
      if not noninteractive then
-       pwd = vim.fn.inputsecret(handler.prompt)
-       -- sudo -S 模式：密码写到 stdin
-       local stdin = pwd .. "\n" .. (opts.stdin or "")
-       return vim.system(args, { text = true, stdin = stdin }):wait()
+       cr = vim.system({config.executable, unpack(h.cache_check)}, { text = true }):wait()
+       cr.code == 0 → 重试不带 -n 的 args，return
      end
 
-  4. 返回首次结果 r（已失败）
+  3. 交互式密码（仅 h.needs_password）:
+     if not noninteractive then
+       pwd = vim.fn.inputsecret(h.get_prompt())
+       return vim.system(args, { text = true, stdin = pwd .. "\n" .. (opts.stdin or "") }):wait()
+     end
+
+  4. return r（首次失败结果）
 ```
 
-### 4.4 复制 shortcut：M.copy()
+### 4.4 M.copy()
 
 ```lua
---- M.copy(src, dst) = M.system(handler.copy.dst_from_src(src, dst))
-function M.copy(src, dst) end
+function M.copy(src, dst)
+  return M.system(handler.get_copy_cmd(src, dst))
+end
 ```
 
-读/写流程中不再硬编码平台命令，统一通过 `M.copy()` 调用。
+读写流程统一通过 `M.copy()` 调用，不硬编码平台命令。
 
 ## 5. API 选择：`vim.uv` / `vim.fs` 替代 `vim.fn.*`
 
