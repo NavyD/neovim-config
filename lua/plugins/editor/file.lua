@@ -1,6 +1,11 @@
 ---@type LazySpec
 return {
   {
+    -- [nsuda — sudo plugin for Neovim](https://github.com/lambdalisue/vim-suda)
+    dir = vim.fn.stdpath("config") .. "/lua/utils/nsuda",
+    opts = { smart_edit = true },
+  },
+  {
     -- Neovim file explorer: edit your filesystem like a buffer
     -- https://github.com/stevearc/oil.nvim
     "stevearc/oil.nvim",

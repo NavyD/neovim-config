@@ -2,9 +2,6 @@
 -- Default autocmds that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/autocmds.lua
 -- Add any additional autocmds here
 
--- [nsuda is a plugin to read or write files with sudo command]
-require("utils.nsuda").setup({ smart_edit = true })
-
 -- [how to disable spellcheck in markdown file? #4021](https://github.com/LazyVim/LazyVim/discussions/4021)
 vim.api.nvim_create_autocmd("FileType", {
   pattern = { "text", "plaintex", "typst", "gitcommit", "markdown" },
