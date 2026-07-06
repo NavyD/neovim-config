@@ -1,4 +1,4 @@
--- lua/navyd/nsuda.lua
+-- nsuda — Lua rewrite of suda.vim, solves Windows tee.exe and gsudo password bugs
 local M = {}
 
 ---@class nsuda.WriteCtx
