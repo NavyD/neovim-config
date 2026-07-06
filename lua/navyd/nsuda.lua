@@ -275,4 +275,66 @@ local function handle_smart_write(buf, path)
   vim.cmd("doautocmd <nomodeline> BufWritePost")
 end
 
+local function has_protocol(name)
+  return name:match("^%w+://") ~= nil
+end
+
+---@param buf  integer
+---@param name string
+local function handle_buf_enter(buf, name)
+  if vim.b[buf].suda_checked then
+    return
+  end
+  vim.b[buf].suda_checked = true
+
+  if name == "" or vim.bo[buf].buftype ~= "" then
+    return
+  end
+  if has_protocol(name) then
+    return
+  end
+
+  local stat = vim.uv.fs_stat(name)
+  if stat and stat.type == "directory" then
+    return
+  end
+
+  if stat and stat.type == "file" then
+    if vim.uv.fs_access(name, "W") then
+      return
+    end
+    vim.bo[buf].buftype = "acwrite"
+    vim.api.nvim_create_autocmd("BufWriteCmd", {
+      group = suda_group,
+      buffer = buf,
+      callback = function()
+        handle_smart_write(buf, vim.fn.expand("<afile>"))
+      end,
+    })
+    return
+  end
+
+  if not stat then
+    local parent = vim.fs.dirname(vim.fn.fnamemodify(name, ":p"))
+    while parent ~= vim.fs.dirname(parent) do
+      local pstat = vim.uv.fs_stat(parent)
+      if pstat and pstat.type == "directory" then
+        if vim.uv.fs_access(parent, "W") then
+          return
+        end
+        vim.bo[buf].buftype = "acwrite"
+        vim.api.nvim_create_autocmd("BufWriteCmd", {
+          group = suda_group,
+          buffer = buf,
+          callback = function()
+            handle_smart_write(buf, vim.fn.expand("<afile>"))
+          end,
+        })
+        return
+      end
+      parent = vim.fs.dirname(parent)
+    end
+  end
+end
+
 return M
