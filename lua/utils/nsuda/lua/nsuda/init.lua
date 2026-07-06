@@ -137,4 +137,30 @@ function Suda:write(path, lines)
   end
 end
 
+function Suda:_default_write_error_handler(ctx)
+  return ctx.error:match("E212:")
+    and ctx.error:lower():match("permission denied|operation not permitted")
+end
+
+function Suda:_confirm_elevation(path)
+  if self._config.noninteractive then
+    return true
+  end
+  local dir = vim.fs.dirname(path)
+  if self._remembered[dir] then
+    return true
+  end
+  local choice = vim.fn.confirm(
+    "[nsuda] Elevate and save " .. vim.fn.fnamemodify(path, ":~") .. "?",
+    "&Yes\n&Remember\n&No", 1, "Question"
+  )
+  if choice == 0 or choice == 3 then
+    return false
+  end
+  if choice == 2 then
+    self._remembered[dir] = true
+  end
+  return true
+end
+
 return {}
