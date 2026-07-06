@@ -302,4 +302,52 @@ function Suda:handle_buf_enter(buf, name)
   end
 end
 
-return {}
+function Suda:register()
+  self:_resolve_builds()
+  self._group = vim.api.nvim_create_augroup("nsuda", { clear = true })
+
+  vim.api.nvim_create_autocmd("BufReadCmd", {
+    group = self._group,
+    pattern = "suda://*",
+    callback = function(args)
+      self:handle_read(args.buf, args.match:gsub("^suda://", ""))
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("BufWriteCmd", {
+    group = self._group,
+    pattern = "suda://*",
+    callback = function(args)
+      self:handle_protocol_write(args.buf, args.match:gsub("^suda://", ""))
+    end,
+  })
+
+  if self._config.smart_edit then
+    vim.api.nvim_create_autocmd("BufEnter", {
+      group = self._group,
+      pattern = "*",
+      nested = true,
+      callback = function(args)
+        self:handle_buf_enter(args.buf, args.match)
+      end,
+    })
+  end
+
+  vim.api.nvim_create_user_command("SudaRead", function(opts)
+    local path = opts.args ~= "" and opts.args or vim.fn.expand("%:p")
+    vim.cmd("edit suda://" .. vim.fn.fnameescape(path))
+  end, { nargs = "?", complete = "file" })
+
+  vim.api.nvim_create_user_command("SudaWrite", function(opts)
+    local path = opts.args ~= "" and opts.args or vim.fn.expand("%:p")
+    vim.cmd("write suda://" .. vim.fn.fnameescape(path))
+  end, { nargs = "?", complete = "file" })
+end
+
+local M = {}
+
+function M.setup(opts)
+  Suda:new(opts):register()
+end
+
+return M
