@@ -149,4 +149,35 @@ function M.write(path, lines)
   end
 end
 
+local remembered_dirs = {}
+
+---@param ctx nsuda.WriteCtx
+local function default_write_error_handler(ctx)
+  return ctx.error:match("E212:")
+    and ctx.error:lower():match("permission denied|operation not permitted")
+end
+
+---@param path string   target file path
+---@return boolean   true = proceed with elevation
+local function confirm_elevation(path)
+  if config.noninteractive then
+    return true
+  end
+  local dir = vim.fs.dirname(path)
+  if remembered_dirs[dir] then
+    return true
+  end
+  local choice = vim.fn.confirm(
+    "[nsuda] Elevate and save " .. vim.fn.fnamemodify(path, ":~") .. "?",
+    "&Yes\n&Remember\n&No", 1, "Question"
+  )
+  if choice == 0 or choice == 3 then
+    return false
+  end
+  if choice == 2 then
+    remembered_dirs[dir] = true
+  end
+  return true
+end
+
 return M
