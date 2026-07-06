@@ -23,7 +23,12 @@ local M = {}
 ---@field write_error_handler?   fun(ctx: nsuda.WriteCtx): boolean
 ---@field builders?              table<string, nsuda.ElevationBuilder>
 
+if not vim.uv then
+  error("[nsuda] Requires Neovim 0.10+")
+end
+
 local is_windows = vim.uv.os_uname().sysname == "Windows_NT"
+---@type nsuda.Config
 local config = {
   noninteractive = false,
   prompt = "Password: ",
@@ -39,7 +44,7 @@ local suda_group = -1
 ---@return string[]
 local function raw_copy_cmd(src, dst)
   if is_windows then
-    return { "cmd", "/c", "copy /y", src, dst }
+    return { "cmd", "/c", "copy", "/y", src, dst }
   end
   return { "dd", "if=" .. src, "of=" .. dst, "bs=1M" }
 end
