@@ -163,4 +163,83 @@ function Suda:_confirm_elevation(path)
   return true
 end
 
+function Suda:handle_read(buf, path)
+  vim.cmd("doautocmd <nomodeline> BufReadPre")
+  local ul = vim.o.undolevels
+  vim.o.undolevels = -1
+  vim.bo[buf].swapfile = false
+  vim.bo[buf].undofile = false
+
+  local ok, lines = pcall(self.read, self, path)
+  if ok then
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
+    vim.api.nvim_buf_set_lines(buf, 0, 0, false, lines)
+    vim.bo[buf].buftype = "acwrite"
+    vim.bo[buf].modified = false
+    vim.cmd("filetype detect")
+  else
+    vim.api.nvim_echo({ { "[nsuda] " .. tostring(lines) } }, true, { err = true })
+  end
+
+  vim.o.undolevels = ul
+  vim.cmd("doautocmd <nomodeline> BufReadPost")
+end
+
+function Suda:_do_elevated_write(buf, path, tmp)
+  local r = self:exec(raw_copy_cmd(tmp, path))
+  if r.code == 0 then
+    vim.bo[buf].modified = false
+    vim.notify("[nsuda] Saved " .. vim.fn.fnamemodify(path, ":~"), vim.log.levels.INFO)
+    return true
+  end
+  vim.api.nvim_echo({ { "[nsuda] " .. r.stderr } }, true, { err = true })
+  return false
+end
+
+function Suda:handle_protocol_write(buf, path)
+  vim.cmd("doautocmd <nomodeline> BufWritePre")
+  local tmp = vim.fn.tempname()
+  vim.cmd("noautocmd write! " .. vim.fn.fnameescape(tmp))
+  self:_do_elevated_write(buf, path, tmp)
+  vim.uv.fs_unlink(tmp)
+  vim.cmd("doautocmd <nomodeline> BufWritePost")
+end
+
+function Suda:handle_smart_write(buf, path)
+  vim.cmd("doautocmd <nomodeline> BufWritePre")
+
+  local bt = vim.bo[buf].buftype
+  vim.bo[buf].buftype = ""
+  local ok, err = pcall(vim.cmd, "noautocmd write")
+  vim.bo[buf].buftype = bt
+
+  if ok then
+    vim.bo[buf].modified = false
+    vim.cmd("doautocmd <nomodeline> BufWritePost")
+    return
+  end
+
+  local handler = self._config.write_error_handler or self._default_write_error_handler
+  local ctx = { error = tostring(err), path = path, buf = buf }
+  if not handler(ctx) then
+    vim.api.nvim_echo({ { "[nsuda] " .. tostring(err) } }, true, { err = true })
+    vim.cmd("doautocmd <nomodeline> BufWritePost")
+    return
+  end
+
+  local tmp = vim.fn.tempname()
+  vim.cmd("noautocmd write! " .. vim.fn.fnameescape(tmp))
+
+  if not self:_confirm_elevation(path) then
+    vim.uv.fs_unlink(tmp)
+    vim.notify("[nsuda] Elevation cancelled", vim.log.levels.WARN)
+    vim.cmd("doautocmd <nomodeline> BufWritePost")
+    return
+  end
+
+  self:_do_elevated_write(buf, path, tmp)
+  vim.uv.fs_unlink(tmp)
+  vim.cmd("doautocmd <nomodeline> BufWritePost")
+end
+
 return {}
