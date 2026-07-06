@@ -57,4 +57,50 @@ function Suda:new(opts)
   }, Suda)
 end
 
+local function default_matcher(exe)
+  local name = vim.fs.basename(exe)
+  if is_windows then
+    name = name:gsub("%.[^.\\/]+$", "")
+  end
+  return name
+end
+
+function Suda:_detect_executable()
+  if self._config.executable then
+    return self._config.executable
+  end
+  if is_windows then
+    if vim.fn.executable("gsudo") == 1 then return "gsudo" end
+    if vim.fn.executable("sudo") == 1 then return "sudo" end
+    return "runas"
+  end
+  return "sudo"
+end
+
+function Suda:_resolve_builds()
+  self._builds = vim.tbl_deep_extend("force", default_builds, self._config.elevation_cmd_builds or {})
+  self._matcher = self._config.elevation_cmd_matcher or default_matcher
+end
+
+function Suda:_elevate(cmd)
+  local exe = self:_detect_executable()
+  local key = self._matcher(exe)
+  local f = self._builds[key]
+  if not f then
+    return nil, "no elevation build for: " .. key
+  end
+  return f(exe, cmd, {
+    noninteractive = self._config.noninteractive,
+    prompt = self._config.prompt,
+  })
+end
+
+function Suda:exec(cmd)
+  local args, err = self:_elevate(cmd)
+  if not args then
+    return { code = -1, stderr = err or "" }
+  end
+  return vim.system(args, { text = true }):wait()
+end
+
 return {}
