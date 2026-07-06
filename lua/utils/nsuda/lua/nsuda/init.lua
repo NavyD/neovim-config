@@ -8,12 +8,7 @@ local M = {}
 
 ---@class nsuda.ElevationBuilder
 ---@field build      fun(cmd: string[]): string[]
----@field build_auth fun(cmd: string[]): string[]?
-
----@class nsuda.SystemResult
----@field code    integer
----@field stdout  string
----@field stderr  string
+---@field build_auth? fun(cmd: string[]): string[]
 
 ---@class nsuda.Config
 ---@field executable?            string
@@ -76,7 +71,7 @@ end
 
 ---@param cmd string[]
 ---@param opts? { stdin?: string }
----@return nsuda.SystemResult
+---@return vim.SystemCompleted
 function M.system(cmd, opts)
   opts = opts or {}
   local b = resolve_builder()
@@ -106,7 +101,7 @@ end
 
 ---@param src string
 ---@param dst string
----@return nsuda.SystemResult
+---@return vim.SystemCompleted
 function M.copy(src, dst)
   return M.system(raw_copy_cmd(src, dst))
 end
@@ -153,8 +148,7 @@ local remembered_dirs = {}
 
 ---@param ctx nsuda.WriteCtx
 local function default_write_error_handler(ctx)
-  return ctx.error:match("E212:")
-    and ctx.error:lower():match("permission denied|operation not permitted")
+  return ctx.error:match("E212:") and ctx.error:lower():match("permission denied|operation not permitted")
 end
 
 ---@param path string   target file path
@@ -169,13 +163,15 @@ local function confirm_elevation(path)
   end
   local choice = vim.fn.confirm(
     "[nsuda] Elevate and save " .. vim.fn.fnamemodify(path, ":~") .. "?",
-    "&Yes\n&Remember\n&No", 1, "Question"
+    "&Yes\n&Remember\n&No",
+    1,
+    "Question"
   )
   if choice == 0 or choice == 3 then
     return false
   end
   if choice == 2 then
-     remembered_dirs[dir] = true
+    remembered_dirs[dir] = true
   end
   return true
 end
@@ -242,6 +238,7 @@ local function handle_smart_write(buf, path)
   local buftype_saved = vim.bo[buf].buftype
   vim.bo[buf].buftype = ""
 
+  ---@diagnostic disable-next-line: param-type-mismatch
   local ok, err = pcall(vim.cmd, "noautocmd write")
   vim.bo[buf].buftype = buftype_saved
 
@@ -355,7 +352,10 @@ function M.setup(user_config)
       elseif vim.fn.executable("sudo") == 1 then
         config.executable = "sudo"
       else
-        vim.notify("[nsuda] No elevation tool found. Install gsudo: https://github.com/gerardog/gsudo", vim.log.levels.ERROR)
+        vim.notify(
+          "[nsuda] No elevation tool found. Install gsudo: https://github.com/gerardog/gsudo",
+          vim.log.levels.ERROR
+        )
         return
       end
     else
