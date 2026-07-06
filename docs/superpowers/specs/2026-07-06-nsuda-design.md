@@ -34,9 +34,9 @@ nsuda 是 suda.vim 的 Lua 重写版，优先解决 Windows bug，同时使用 N
 ---@field prompt          string   密码提示符
 
 --- elevation_cmd_build 函数签名
---- 内部自行处理认证（缓存探测、密码输入），认证成功后返回待执行的命令参数
---- 返回 nil, err_reason 表示认证失败或用户取消
----@alias nsuda.ElevationCmdBuild fun(cmd: string[], ctx: nsuda.CmdCtx): string[]?, string?
+--- exe 为可执行文件路径，内部自行处理认证（缓存探测、密码输入），
+--- 认证成功后返回待执行的完整命令参数列表。失败返回 nil, reason。
+---@alias nsuda.ElevationCmdBuild fun(exe: string, cmd: string[], ctx: nsuda.CmdCtx): string[]?, string?
 
 --- elevation_cmd_matcher 函数签名
 --- 根据 executable 路径返回 elevation_cmd_builds 的 key
@@ -74,6 +74,12 @@ return M
 ```
 
 唯一公开 API。`setup()` 内部创建 `Suda` 实例、注册 autocmd 和用户命令。
+
+内部 `Suda` 实例方法（封装在类中，不导出）：
+- `Suda:read(path)` — 提权读取文件
+- `Suda:write(path, lines)` — 提权写入文件
+- `Suda:exec(cmd)` — 提权执行命令
+- `Suda:copy(src, dst)` — 提权复制文件
 
 用户命令：
 - `:SudaRead [path]` — 提权打开文件
@@ -126,11 +132,11 @@ Suda 不知道 `-n`/`-S`/`inputsecret`/`UAC` 这些概念，只调用 `elevation
 ```lua
 local default_builds = {
   --- sudo (Unix): 缓存 → inputsecret 密码
-  sudo = function(cmd, ctx)
+  sudo = function(exe, cmd, ctx)
     -- 1. 缓存探测
-    local r = vim.system({"sudo", "-n", "true"}, {text = true}):wait()
+    local r = vim.system({exe, "-n", "true"}, {text = true}):wait()
     if r.code == 0 then
-      return {"sudo", unpack(cmd)}
+      return {exe, unpack(cmd)}
     end
     if ctx.noninteractive then
       return nil, "sudo authentication required"
@@ -138,21 +144,21 @@ local default_builds = {
     -- 2. 密码认证
     local pwd = vim.fn.inputsecret(ctx.prompt)
     if #pwd == 0 then return nil, "cancelled" end
-    local ar = vim.system({"sudo", "-S", "-p", "", "true"}, {text = true, stdin = pwd .. "\n"}):wait()
+    local ar = vim.system({exe, "-S", "-p", "", "true"}, {text = true, stdin = pwd .. "\n"}):wait()
     if ar.code ~= 0 then
       return nil, "sudo authentication failed"
     end
-    return {"sudo", unpack(cmd)}
+    return {exe, unpack(cmd)}
   end,
 
   --- gsudo (Windows UAC): 直接透传
-  gsudo = function(cmd, ctx)
-    return {"gsudo", unpack(cmd)}
+  gsudo = function(exe, cmd, ctx)
+    return {exe, unpack(cmd)}
   end,
 
-  --- runas (Windows fallback): batch + runas
-  runas = function(cmd, ctx)
-    return {"runas", "/noprofile", "/user:Administrator", unpack(cmd)}
+  --- runas (Windows fallback)
+  runas = function(exe, cmd, ctx)
+    return {exe, "/noprofile", "/user:Administrator", unpack(cmd)}
   end,
 }
 ```
@@ -166,7 +172,7 @@ function Suda:_elevate(cmd)
   if not f then
     return nil, "no elevation build for: " .. key
   end
-  return f(cmd, {
+  return f(self._config.executable, cmd, {
     noninteractive = self._config.noninteractive,
     prompt = self._config.prompt,
   })
