@@ -104,4 +104,49 @@ function M.system(cmd, opts)
   return r
 end
 
+---@param src string
+---@param dst string
+---@return nsuda.SystemResult
+function M.copy(src, dst)
+  return M.system(raw_copy_cmd(src, dst))
+end
+
+---@param path string
+---@return string[]
+function M.read(path)
+  path = (path:gsub("^(suda://)+", ""))
+  path = vim.fn.fnamemodify(vim.fn.expand(path), ":p")
+
+  local stat = vim.uv.fs_stat(path)
+  if stat and stat.type == "file" and vim.uv.fs_access(path, "R") then
+    return vim.fn.readfile(path, "b")
+  end
+
+  local tmp = vim.fn.tempname()
+  local r = M.copy(path, tmp)
+  if r.code ~= 0 then
+    pcall(vim.uv.fs_unlink, tmp)
+    error("[nsuda] Cannot read " .. path .. ": " .. r.stderr)
+  end
+  local lines = vim.fn.readfile(tmp, "b")
+  vim.uv.fs_unlink(tmp)
+  return lines
+end
+
+---@param path string
+---@param lines? string[]
+function M.write(path, lines)
+  path = (path:gsub("^(suda://)+", ""))
+  path = vim.fn.fnamemodify(vim.fn.expand(path), ":p")
+  lines = lines or vim.api.nvim_buf_get_lines(0, 0, -1, false)
+
+  local tmp = vim.fn.tempname()
+  vim.fn.writefile(lines, tmp, "b")
+  local r = M.copy(tmp, path)
+  vim.uv.fs_unlink(tmp)
+  if r.code ~= 0 then
+    error("[nsuda] Cannot write " .. path .. ": " .. r.stderr)
+  end
+end
+
 return M
