@@ -175,9 +175,104 @@ local function confirm_elevation(path)
     return false
   end
   if choice == 2 then
-    remembered_dirs[dir] = true
+     remembered_dirs[dir] = true
   end
   return true
+end
+
+---@param buf integer
+---@param path string   real filesystem path (suda:// already stripped)
+local function handle_suda_read(buf, path)
+  vim.cmd("doautocmd <nomodeline> BufReadPre")
+
+  local ul = vim.o.undolevels
+  vim.o.undolevels = -1
+  vim.bo[buf].swapfile = false
+  vim.bo[buf].undofile = false
+
+  local ok, lines = pcall(M.read, path)
+  if ok then
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
+    vim.api.nvim_buf_set_lines(buf, 0, 0, false, lines)
+    vim.bo[buf].buftype = "acwrite"
+    vim.bo[buf].modified = false
+    vim.cmd("filetype detect")
+  else
+    vim.api.nvim_echo({ { "[nsuda] " .. tostring(lines) } }, true, { err = true })
+  end
+
+  vim.o.undolevels = ul
+  vim.cmd("doautocmd <nomodeline> BufReadPost")
+end
+
+--- Write tempfile to target via elevation. Returns true on success.
+---@param buf  integer
+---@param path string   real filesystem path
+---@param tmp  string   tempfile path with buffer content already written
+---@return boolean
+local function do_elevated_write(buf, path, tmp)
+  local r = M.copy(tmp, path)
+  if r.code == 0 then
+    vim.bo[buf].modified = false
+    vim.notify("[nsuda] Saved " .. vim.fn.fnamemodify(path, ":~"), vim.log.levels.INFO)
+    return true
+  end
+  vim.api.nvim_echo({ { "[nsuda] " .. r.stderr } }, true, { err = true })
+  return false
+end
+
+---@param buf  integer
+---@param path string   real filesystem path (suda:// already stripped)
+local function handle_suda_protocol_write(buf, path)
+  vim.cmd("doautocmd <nomodeline> BufWritePre")
+
+  local tmp = vim.fn.tempname()
+  vim.cmd("noautocmd write! " .. vim.fn.fnameescape(tmp))
+  do_elevated_write(buf, path, tmp)
+  vim.uv.fs_unlink(tmp)
+
+  vim.cmd("doautocmd <nomodeline> BufWritePost")
+end
+
+---@param buf  integer
+---@param path string   real filesystem path (no suda:// prefix)
+local function handle_smart_write(buf, path)
+  vim.cmd("doautocmd <nomodeline> BufWritePre")
+
+  local buftype_saved = vim.bo[buf].buftype
+  vim.bo[buf].buftype = ""
+
+  local ok, err = pcall(vim.cmd, "noautocmd write")
+  vim.bo[buf].buftype = buftype_saved
+
+  if ok then
+    vim.bo[buf].modified = false
+    vim.cmd("doautocmd <nomodeline> BufWritePost")
+    return
+  end
+
+  local handler = config.write_error_handler or default_write_error_handler
+  local ctx = { error = tostring(err), path = path, buf = buf }
+  if not handler(ctx) then
+    vim.api.nvim_echo({ { "[nsuda] " .. tostring(err) } }, true, { err = true })
+    vim.cmd("doautocmd <nomodeline> BufWritePost")
+    return
+  end
+
+  local tmp = vim.fn.tempname()
+  vim.cmd("noautocmd write! " .. vim.fn.fnameescape(tmp))
+
+  if not confirm_elevation(path) then
+    vim.uv.fs_unlink(tmp)
+    vim.notify("[nsuda] Elevation cancelled", vim.log.levels.WARN)
+    vim.cmd("doautocmd <nomodeline> BufWritePost")
+    return
+  end
+
+  do_elevated_write(buf, path, tmp)
+  vim.uv.fs_unlink(tmp)
+
+  vim.cmd("doautocmd <nomodeline> BufWritePost")
 end
 
 return M
