@@ -1,11 +1,9 @@
 ---@type LazySpec
 return {
   {
-    -- [nsuda is a plugin to read or write files with sudo command](https://github.com/NavyD/nsuda.nvim)
-    "navyd/nsuda.nvim",
-    opts = {
-      smart_edit = true,
-    },
+    -- [nsuda — sudo plugin for Neovim](https://github.com/lambdalisue/vim-suda)
+    dir = vim.fn.stdpath("config") .. "/lua/utils/nsuda",
+    opts = { smart_edit = true },
   },
   {
     -- Neovim file explorer: edit your filesystem like a buffer
