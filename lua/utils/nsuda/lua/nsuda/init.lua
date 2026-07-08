@@ -455,7 +455,16 @@ function Suda:handle_buf_enter(buf, path)
 
     if stat.type == "file" then
       if uv.fs_access(path, "R") and uv.fs_access(path, "W") then
-        return
+        if not is_windows then
+          return
+        end
+        --- 由于 windows fs_access 写入判断不可信，使用打开文件 append
+        --- 检查文件是否可写
+        local fd = uv.fs_open(path, "a", tonumber("640", 8))
+        if fd then
+          uv.fs_close(fd)
+          return
+        end
       end
 
       local real_path = vim.fn.fnamemodify(path, ":p")
