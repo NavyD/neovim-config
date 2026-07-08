@@ -153,10 +153,10 @@ function protocol.get_path(protocol_str)
   path = vim.fn.fnamemodify(path, ":p")
   return path
 end
----@param s string
-function protocol.is(s)
-  return s:match("^" .. protocol._name) ~= nil
-end
+------@param s string
+---function protocol.is(s)
+---  return s:match("^" .. protocol._name) ~= nil
+---end
 function protocol.pattern()
   return protocol._name .. "*"
 end
@@ -168,9 +168,10 @@ function protocol.get_buf_path(buf)
   if not name or name == "" then
     return nil, "empty buf name"
   end
-  if not protocol.is(name) then
-    return nil, "invalid protocol path=" .. name .. " for buf=" .. buf
-  end
+  -- 不要检查，在非 suda:// 中使用 SudaWrite 获取的buf path 不包含 suda:// 导致认为非法
+  -- if not protocol.is(name) then
+  --   return nil, "invalid protocol path=" .. name .. " for buf=" .. buf
+  -- end
   return protocol.get_path(name), nil
 end
 
