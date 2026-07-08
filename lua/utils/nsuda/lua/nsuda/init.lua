@@ -1,6 +1,7 @@
 -- nsuda — Lua rewrite of suda.vim, OOP Suda class with elevation_cmd_build architecture
 
 local uv = vim.uv
+local api = vim.api
 
 local log = {}
 ---@param msg string
@@ -89,8 +90,8 @@ local default_config = {
     sudo = function(ctx)
       local exe = ctx.exe
       local cmd = ctx.cmd
-      local check_cmd = { "true" }
-      local r = vim.system({ exe, "-n", unpack(check_cmd) }, { text = true }):wait()
+      local check_cmd_args = { exe, "-n", "--validate" }
+      local r = vim.system(check_cmd_args, { text = true }):wait()
       if r.code == 0 then
         return { exe, unpack(cmd) }
       end
@@ -101,11 +102,12 @@ local default_config = {
       if #pwd == 0 then
         return nil, "cancelled"
       end
-      local ar = vim.system({ exe, "-S", "-p", "", unpack(check_cmd) }, { text = true, stdin = pwd .. "\n" }):wait()
+      local cache_args = { exe, "-S", "-p", "", "--validate" }
+      local ar = vim.system(cache_args, { text = true, stdin = pwd .. "\n" }):wait()
       if ar.code ~= 0 then
         return nil, "sudo authentication failed"
       end
-      return { exe, unpack(cmd) }
+      return { exe, "-n", unpack(cmd) }
     end,
 
     ["gsudo.exe"] = function(ctx)
@@ -138,6 +140,40 @@ local default_config = {
   },
 }
 
+local protocol = { _name = "suda://" }
+
+---@param path string
+function protocol.join(path)
+  return protocol._name .. path
+end
+---@param protocol_str string
+function protocol.get_path(protocol_str)
+  protocol_str = vim.fn.expand(protocol_str)
+  local path = protocol_str:gsub("^" .. protocol._name, "")
+  path = vim.fn.fnamemodify(path, ":p")
+  return path
+end
+---@param s string
+function protocol.is(s)
+  return s:match("^" .. protocol._name) ~= nil
+end
+function protocol.pattern()
+  return protocol._name .. "*"
+end
+---@param buf integer
+---@return string? path
+---@return string? error
+function protocol.get_buf_path(buf)
+  local name = api.nvim_buf_get_name(buf)
+  if not name or name == "" then
+    return nil, "empty buf name"
+  end
+  if not protocol.is(name) then
+    return nil, "invalid protocol path=" .. name .. " for buf=" .. buf
+  end
+  return protocol.get_path(name), nil
+end
+
 ---@param config nsuda.Config
 ---@return nsuda.Suda
 function Suda.new(config)
@@ -146,7 +182,6 @@ function Suda.new(config)
     _config = config,
     _augroup = vim.api.nvim_create_augroup("nsuda", { clear = true }),
     _remembered = {},
-    _matcher = nil,
   }
   return setmetatable(o, { __index = Suda })
 end
@@ -154,64 +189,68 @@ end
 ---@param cmd string[]
 ---@return vim.SystemCompleted?
 ---@return string? error
-function Suda:_elevate(cmd)
+function Suda:_build_elevation_cmd(cmd)
   local conf = self._config
   local exe = conf.executable
   local key = conf.elevation_cmd_build_match_fn(exe)
-  local f = conf.elevation_cmd_builds[key]
-  if not f then
+  local cmd_build_fn = conf.elevation_cmd_builds[key]
+  if not cmd_build_fn then
     return nil, "no elevation build for: " .. key
   end
-  return f({ exe = exe, cmd = cmd, noninteractive = conf.noninteractive }), nil
+  ---@type boolean, string|string[]?, string?
+  local ok, res, res1 = pcall(cmd_build_fn, { exe = exe, cmd = cmd, noninteractive = conf.noninteractive })
+  if not ok then
+    ---@cast res string
+    return nil, res
+  end
+  ---@cast res string[]?
+  if not res then
+    return nil, res1
+  end
+  return res, nil
 end
 
 ---@param cmd string[]
 ---@return string? error
 function Suda:exec(cmd)
-  local args, err = self:_elevate(cmd)
-  if not args then
+  local elev_cmd, err = self:_build_elevation_cmd(cmd)
+  if not elev_cmd then
     return err
   end
-  local o = vim.system(args, { text = true }):wait()
+  local o = vim.system(elev_cmd, { text = true }):wait()
   if o.code ~= 0 then
-    return "Failed to run cmd=" .. vim.inspect(args) .. " with code=" .. o.code .. " stderr=" .. (o.stderr or "")
+    return "Failed to run cmd=" .. vim.inspect(elev_cmd) .. " with code=" .. o.code .. " stderr=" .. (o.stderr or "")
   end
   return nil
 end
 
 ---@param path string
-function Suda:read(path)
-  path = path:gsub("^(suda://)+", "")
-  path = vim.fn.fnamemodify(vim.fn.expand(path), ":p")
-
+---@return string[]? data
+---@return string? error
+function Suda:_read_file(path)
+  path = protocol.get_path(path)
   local stat = uv.fs_stat(path)
+  if not stat then
+    return nil, nil
+  end
   if stat and stat.type == "file" and uv.fs_access(path, "R") then
-    return vim.fn.readfile(path, "b")
+    return vim.fn.readfile(path, "b"), nil
   end
 
   local tmp = vim.fn.tempname()
-  local exec_err = self:exec(raw_copy_cmd(path, tmp))
-  if exec_err then
-    pcall(uv.fs_unlink, tmp)
-    error("[nsuda] Cannot read " .. path .. ": " .. exec_err)
-  end
-  local lines = vim.fn.readfile(tmp, "b")
+  local ok, res, lines = pcall(function()
+    local exec_err = self:exec(raw_copy_cmd(path, tmp))
+    if exec_err then
+      return exec_err, nil
+    end
+    return nil, vim.fn.readfile(tmp, "b")
+  end)
   uv.fs_unlink(tmp)
-  return lines
-end
 
-function Suda:write(path, lines)
-  path = path:gsub("^(suda://)+", "")
-  path = vim.fn.fnamemodify(vim.fn.expand(path), ":p")
-  lines = lines or vim.api.nvim_buf_get_lines(0, 0, -1, false)
-
-  local tmp = vim.fn.tempname()
-  vim.fn.writefile(lines, tmp, "b")
-  local exec_err = self:exec(raw_copy_cmd(tmp, path))
-  uv.fs_unlink(tmp)
-  if exec_err then
-    error("[nsuda] Cannot write " .. path .. ": " .. exec_err)
+  if not ok then
+    return nil, res
   end
+  return lines, res
 end
 
 ---@param path string
@@ -240,55 +279,117 @@ function Suda:_confirm_elevation(path)
 end
 
 ---@param buf integer
----@param path string
-function Suda:handle_read(buf, path)
-  log.info("reading buf=" .. buf .. " for path=" .. path)
-  vim.cmd("doautocmd <nomodeline> BufReadPre")
-  local ul = vim.o.undolevels
-  vim.o.undolevels = -1
-  vim.bo[buf].swapfile = false
-  vim.bo[buf].undofile = false
-
-  local ok, lines = pcall(self.read, self, path)
-  if ok then
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
-    vim.api.nvim_buf_set_lines(buf, 0, 0, false, lines)
-    vim.bo[buf].buftype = "acwrite"
-    vim.bo[buf].modified = false
-    vim.cmd("filetype detect")
-  else
-    vim.api.nvim_echo({ { "[nsuda] " .. tostring(lines) } }, true, { err = true })
+---@return string? error
+function Suda:_load_protocol_buf(buf)
+  local path, err = protocol.get_buf_path(buf)
+  if not path then
+    return err
   end
+
+  local ul = vim.o.undolevels
+  -- 目的：让 sudo 读取 + 替换 buffer 内容的操作不污染 undo 历史。
+  -- 否则用户按 u 会撤销回空 buffer， 没有任何意义。
+  vim.o.undolevels = -1
+
+  local ok, res = pcall(function()
+    local bufopt = vim.bo[buf]
+    bufopt.swapfile = false
+    bufopt.undofile = false
+
+    local lines, read_err = self:_read_file(path)
+    if lines then
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
+      vim.api.nvim_buf_set_lines(buf, 0, 0, false, lines)
+    elseif read_err then
+      return read_err
+    end
+
+    bufopt.buftype = "acwrite"
+    bufopt.modified = false
+    -- bufopt.readonly = false
+    local ft, ft_state_fn = vim.filetype.match({ buf = buf })
+    if ft then
+      bufopt.filetype = ft
+      if ft_state_fn then
+        ft_state_fn(buf)
+      end
+    end
+  end)
 
   vim.o.undolevels = ul
-  vim.cmd("doautocmd <nomodeline> BufReadPost")
-end
 
-function Suda:_do_elevated_write(buf, path, tmp)
-  local exec_err = self:exec(raw_copy_cmd(tmp, path))
-  if exec_err then
-    vim.api.nvim_echo({ { "[nsuda] " .. exec_err } }, true, { err = true })
-    return false
+  if not ok or res then
+    return res
   end
-  vim.bo[buf].modified = false
-  vim.notify("[nsuda] Saved " .. vim.fn.fnamemodify(path, ":~"), vim.log.levels.INFO)
-  return true
 end
 
-function Suda:handle_protocol_write(buf, path)
-  vim.cmd("doautocmd <nomodeline> BufWritePre")
+---@param buf integer
+function Suda:handle_read(buf)
+  api.nvim_exec_autocmds("BufReadPre", { buffer = buf, modeline = false })
+  local err = self:_load_protocol_buf(buf)
+  if err then
+    log.error(err)
+  end
+  api.nvim_exec_autocmds("BufReadPost", { buffer = buf, modeline = false })
+end
+
+---@param buf integer
+---@param path string
+local function write_buf_to_file(buf, path)
+  local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
+  vim.fn.writefile(lines, path, "b")
+end
+
+-- 将 buf 内容写入到临时文件，并将临时文件的内容提权复制到 buf name 对应的真实文件中。
+---@param buf integer
+---@param conform? boolean
+---@return boolean written
+---@return string? error
+function Suda:_do_elevated_write(buf, conform)
   local tmp = vim.fn.tempname()
-  vim.cmd("noautocmd write! " .. vim.fn.fnameescape(tmp))
-  self:_do_elevated_write(buf, path, tmp)
+  local ok, res = pcall(function()
+    local buf_src, buf_src_err = protocol.get_buf_path(buf)
+    if not buf_src then
+      return buf_src_err or ""
+    end
+
+    if conform and not self:_confirm_elevation(buf_src) then
+      return false
+    end
+
+    write_buf_to_file(buf, tmp)
+    return self:exec(raw_copy_cmd(tmp, buf_src))
+  end)
   uv.fs_unlink(tmp)
-  vim.cmd("doautocmd <nomodeline> BufWritePost")
+  if not ok then
+    ---@cast res string?
+    return false, res
+  end
+  if res then
+    return false, res
+  end
+  -- 取消确认
+  if conform and res == false then
+    return false, nil
+  end
+
+  vim.bo[buf].modified = false
+  return true, nil
+end
+
+---@param buf integer
+function Suda:handle_protocol_write(buf)
+  api.nvim_exec_autocmds("BufWritePre", { buf = buf, modeline = false })
+  local ok, err = self:_do_elevated_write(buf)
+  if not ok then
+    error(err or "empty elevated write error")
+  end
+  api.nvim_exec_autocmds("BufWritePost", { buf = buf, modeline = false })
 end
 
 ---@param buf integer
 ---@param path string
 function Suda:handle_smart_write(buf, path)
-  log.info("handling enter buf=" .. buf .. " name=" .. path)
-
   vim.cmd("doautocmd <nomodeline> BufWritePre")
 
   local bt = vim.bo[buf].buftype
@@ -310,18 +411,16 @@ function Suda:handle_smart_write(buf, path)
     return
   end
 
-  local tmp = vim.fn.tempname()
-  vim.cmd("noautocmd write! " .. vim.fn.fnameescape(tmp))
-
-  if not self:_confirm_elevation(path) then
-    uv.fs_unlink(tmp)
-    vim.notify("[nsuda] Elevation cancelled", vim.log.levels.WARN)
-    vim.cmd("doautocmd <nomodeline> BufWritePost")
+  local write_ok, write_err = self:_do_elevated_write(buf, true)
+  if not write_ok then
+    if write_err then
+      error(write_err)
+    end
+    -- 当交互确认取消时返回 write_err==nil
+    log.warn("Cancelled writing elevation to file")
     return
   end
 
-  self:_do_elevated_write(buf, path, tmp)
-  uv.fs_unlink(tmp)
   vim.cmd("doautocmd <nomodeline> BufWritePost")
 end
 
@@ -330,62 +429,61 @@ local function has_protocol(name)
 end
 
 ---@param buf integer
----@param name string
-function Suda:handle_buf_enter(buf, name)
-  -- log.info("handling enter buf=" .. buf .. " name=" .. name)
+---@param path string
+function Suda:handle_buf_enter(buf, path)
   local buf_key = "_suda_checked"
   if vim.b[buf][buf_key] then
     return
   end
   vim.b[buf][buf_key] = true
 
-  if name == "" or vim.bo[buf].buftype ~= "" then
+  path = vim.fn.expand(path)
+
+  if path == "" or vim.bo[buf].buftype ~= "" then
     return
   end
-  if has_protocol(name) then
+  if has_protocol(path) then
     return
   end
 
-  local stat = uv.fs_stat(name)
+  local stat = uv.fs_stat(path)
   if stat then
     if stat.type == "directory" then
       return
     end
 
     if stat.type == "file" then
-      if uv.fs_access(name, "W") then
+      if uv.fs_access(path, "R") and uv.fs_access(path, "W") then
         return
       end
 
-      vim.bo[buf].buftype = "acwrite"
-      -- log.info("handling enter buf=" .. buf .. " name=" .. name .. " stat=" .. vim.inspect(stat))
-
-      vim.api.nvim_create_autocmd("BufWriteCmd", {
-        group = self._augroup,
-        buffer = buf,
-        callback = function()
-          self:handle_smart_write(buf, vim.fn.expand("<afile>"))
-        end,
-      })
+      local real_path = vim.fn.fnamemodify(path, ":p")
+      -- NOTE: 使用 newbuf 代替原buf 不需要修改原buf的状态，如readonly等
+      -- 如果不使用 vim.schedule 会导致原buf的messages中仍然存在Permission denied信息
+      vim.schedule(function()
+        local new_buf = api.nvim_create_buf(true, false)
+        api.nvim_set_current_buf(new_buf)
+        api.nvim_buf_set_name(new_buf, protocol.join(real_path))
+        self:handle_read(new_buf)
+        pcall(api.nvim_buf_delete, buf, { force = true })
+      end)
       return
     end
   else
-    local parent = vim.fs.dirname(vim.fn.fnamemodify(name, ":p"))
+    local parent = vim.fs.dirname(vim.fn.fnamemodify(path, ":p"))
     while parent ~= vim.fs.dirname(parent) do
       local pstat = uv.fs_stat(parent)
       if pstat and pstat.type == "directory" then
         if uv.fs_access(parent, "W") then
           return
         end
-
-        vim.bo[buf].buftype = "acwrite"
-        vim.api.nvim_create_autocmd("BufWriteCmd", {
-          group = self._augroup,
-          buffer = buf,
-          callback = function()
-            self:handle_smart_write(buf, vim.fn.expand("<afile>"))
-          end,
-        })
+        vim.schedule(function()
+          local new_buf = api.nvim_create_buf(true, false)
+          api.nvim_set_current_buf(new_buf)
+          api.nvim_buf_set_name(new_buf, protocol.join(path))
+          self:_load_protocol_buf(buf)
+          api.nvim_buf_delete(buf, { force = true })
+        end)
         return
       end
       parent = vim.fs.dirname(parent)
@@ -396,17 +494,17 @@ end
 function Suda:register()
   vim.api.nvim_create_autocmd("BufReadCmd", {
     group = self._augroup,
-    pattern = "suda://*",
+    pattern = protocol.pattern(),
     callback = function(args)
-      self:handle_read(args.buf, args.match:gsub("^suda://", ""))
+      self:handle_read(args.buf)
     end,
   })
 
   vim.api.nvim_create_autocmd("BufWriteCmd", {
     group = self._augroup,
-    pattern = "suda://*",
+    pattern = protocol.pattern(),
     callback = function(args)
-      self:handle_protocol_write(args.buf, args.match:gsub("^suda://", ""))
+      self:handle_protocol_write(args.buf)
     end,
   })
 
@@ -423,12 +521,12 @@ function Suda:register()
 
   vim.api.nvim_create_user_command("SudaRead", function(opts)
     local path = opts.args ~= "" and opts.args or vim.fn.expand("%:p")
-    vim.cmd("edit suda://" .. vim.fn.fnameescape(path))
+    vim.cmd.edit(vim.fn.fnameescape(protocol.join(path)))
   end, { nargs = "?", complete = "file" })
 
   vim.api.nvim_create_user_command("SudaWrite", function(opts)
     local path = opts.args ~= "" and opts.args or vim.fn.expand("%:p")
-    vim.cmd("write suda://" .. vim.fn.fnameescape(path))
+    vim.cmd.write(vim.fn.fnameescape(protocol.join(path)))
   end, { nargs = "?", complete = "file" })
 end
 
@@ -457,7 +555,6 @@ function M.setup(config)
   end
 
   config = vim.tbl_deep_extend("keep", config or {}, default_config)
-  log.info("suda config=" .. vim.inspect(config))
   Suda.new(config):register()
 end
 
