@@ -58,7 +58,6 @@ end
 ---@field build_copy_cmd fun(src: string, dst: string): string[] # Platform raw copy command (no elevation prefix)
 ---@field elevation_cmd_builds nsuda.ElevationCmdBuilds
 ---@field elevation_cmd_build_match_fn fun(exe: string): string
----@field write_error_match fun(ctx: WriteErrorMatchCtx): boolean
 
 local is_windows = uv.os_uname().sysname == "Windows_NT"
 
@@ -77,10 +76,7 @@ local default_config = {
     end
     -- `bs=1048576` is equivalent to `bs=1M` for GNU dd or `bs=1m` for BSD dd
     -- Both `bs=1M` and `bs=1m` are non-POSIX
-    return { "dd", "if=" .. src, "of=" .. dst, "bs=1048576" }
-  end,
-  write_error_match = function(ctx)
-    return ctx.error:match("E212:") and ctx.error:lower():match("permission denied|operation not permitted")
+    return { "dd", "if=" .. src, "of=" .. dst, "bs=" .. 1024 * 1024 }
   end,
   elevation_cmd_build_match_fn = function(exe)
     local name = vim.fs.basename(exe)
@@ -98,6 +94,7 @@ local default_config = {
       local exe = ctx.exe
       local cmd = ctx.cmd
       local check_cmd_args = { exe, "-n", "--validate" }
+      echo("checking elevation cache with cmd=" .. vim.inspect(check_cmd_args))
       local r = vim.system(check_cmd_args, { text = true }):wait()
       if r.code == 0 then
         return { exe, unpack(cmd) }
@@ -105,36 +102,52 @@ local default_config = {
       if ctx.noninteractive then
         return nil, "sudo authentication required"
       end
-      local pwd = fn.inputsecret("Sudo password: ")
-      if #pwd == 0 then
-        return nil, "cancelled"
+
+      local input_ok, pw = pcall(function()
+        fn.inputsave()
+        vim.cmd("redraw")
+        return fn.inputsecret("Sudo password: ")
+      end)
+      if not input_ok then
+        return nil, pw
       end
+      fn.inputrestore()
+      if #pw == 0 then
+        return nil, "sudo auth cancelled"
+      end
+
       local cache_args = { exe, "-S", "-p", "", "--validate" }
-      local ar = vim.system(cache_args, { text = true, stdin = pwd .. "\n" }):wait()
-      if ar.code ~= 0 then
+      echo("caching elevation with cmd=" .. vim.inspect(cache_args))
+      local cache_res = vim.system(cache_args, { text = true, stdin = pw }):wait()
+      if cache_res.code ~= 0 then
         return nil, "sudo authentication failed"
       end
+
       return { exe, "-n", unpack(cmd) }
     end,
 
     ["gsudo.exe"] = function(ctx)
-      local check_cmd = { "status", "--json" }
-      local r = vim.system({ ctx.exe, unpack(check_cmd) }, { text = true }):wait()
-      if r.code ~= 0 then
-        return nil, r.stderr
+      local check_cmd = { ctx.exe, "status", "--json" }
+      echo("checking elevation cache with cmd=" .. vim.inspect(check_cmd))
+      local check_res = vim.system(check_cmd, { text = true }):wait()
+      if check_res.code ~= 0 then
+        return nil, check_res.stderr
       end
-      local decode_ok, decode_res = pcall(vim.json.decode, r.stdout)
+
+      local decode_ok, decode_res = pcall(vim.json.decode, check_res.stdout)
       if not decode_ok then
         return nil, decode_res
       end
       assert(type(decode_res) == "table")
       if not decode_res["CacheAvailable"] then
-        local ele_cmd = { ctx.exe, "cache", "on", "-p", uv.os_getpid() }
-        local ele_res = vim.system(ele_cmd):wait()
-        if ele_res.code ~= 0 then
-          return nil, "Failed to run cmd=" .. vim.inspect(ele_cmd) .. " with error: " .. (ele_res.stderr or "")
+        local cache_cmd = { ctx.exe, "cache", "on", "-p", uv.os_getpid() }
+        echo("caching elevation with cmd=" .. vim.inspect(cache_cmd))
+        local cache_res = vim.system(cache_cmd):wait()
+        if cache_res.code ~= 0 then
+          return nil, "Failed to run cmd=" .. vim.inspect(cache_cmd) .. " with error: " .. (cache_res.stderr or "")
         end
       end
+
       return { ctx.exe, unpack(ctx.cmd) }, nil
     end,
 
