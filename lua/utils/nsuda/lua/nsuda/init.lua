@@ -309,6 +309,10 @@ function Suda:read(path, opts)
   if is_readable(path) then
     return vim_exec("read", opts, path)
   end
+  -- 文件不存在
+  if not uv.fs_stat(path) then
+    return nil, nil
+  end
 
   local tmp = fn.tempname()
   local ok, msg, err = pcall(function()
@@ -432,7 +436,9 @@ function Suda:do_bufreadcmd(args)
     -- 但在清空缓冲区后第 0 行并不存在，可能引发问题。而 1 明确指代第一行，
     -- Vim 会将内容插入到第一行之前，效果同样是开头
     local msg, err = self:read(args.file, { range = "1" })
-    if not msg then
+    -- 如果 file 不存在 `nil,nil` 则会打开空 buf，避免报错终止，与
+    -- edit 打开不存在的文件行为一致
+    if not msg and err then
       return nil, err
     end
 
