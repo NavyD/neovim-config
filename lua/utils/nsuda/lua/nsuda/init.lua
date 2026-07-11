@@ -3,6 +3,7 @@
 local uv = vim.uv
 local api = vim.api
 local fn = vim.fn
+local fs = vim.fs
 
 local M = {}
 
@@ -79,7 +80,7 @@ local default_config = {
     return { "dd", "if=" .. src, "of=" .. dst, "bs=" .. 1024 * 1024 }
   end,
   elevation_cmd_build_match_fn = function(exe)
-    local name = vim.fs.basename(exe)
+    local name = fs.basename(exe)
     if is_windows then
       name = name:lower()
       -- if name ~= "sudo.exe" then
@@ -152,7 +153,11 @@ local default_config = {
     end,
 
     ["sudo.exe"] = function(ctx)
-      return { ctx.exe, unpack(ctx.cmd) }
+      -- 要求 sudo 配置 `sudo config --enable normal` 或在 设置 中指定，否则将会导致 sudo.exe 总是失败
+      -- https://learn.microsoft.com/zh-cn/windows/advanced-settings/sudo/#how-to-configure-sudo-for-windows
+      -- 指定 `--inline` 与 unix/sudo 行为类似，否则 sudo.exe 进程新建窗口立即返回
+      -- code=0 临时文件被删除导致 sudo.exe 在新窗口执行失败
+      return { ctx.exe, "--inline", unpack(ctx.cmd) }
     end,
   },
 }
@@ -210,17 +215,22 @@ local function is_writable(path)
   local aw = uv.fs_access(path, "W")
   if not is_windows then
     -- 不可写且文件不存在时检查父目录
-    return aw or (not uv.fs_stat(path) and uv.fs_access(vim.fs.dirname(path), "W") == true)
+    return aw or (not uv.fs_stat(path) and uv.fs_access(fs.dirname(path), "W") == true)
   end
 
   if not aw then
     return false
   end
+  local path_exists = uv.fs_stat(path) ~= nil
   local fd = uv.fs_open(path, "a", tonumber("640", 8))
   if not fd then
     return false
   end
   uv.fs_close(fd)
+  -- 移除打开不存在的文件时创建的新文件
+  if not path_exists then
+    uv.fs_unlink(path)
+  end
   return true
 end
 
@@ -239,21 +249,21 @@ function Suda:_build_elevation_cmd(cmd)
   local conf = self._config
   local exe = conf.executable
   local key = conf.elevation_cmd_build_match_fn(exe)
-  local cmd_build_fn = conf.elevation_cmd_builds[key]
-  if not cmd_build_fn then
+  local elev_cmd_build = conf.elevation_cmd_builds[key]
+  if not elev_cmd_build then
     return nil, "no elevation build key=" .. key .. " for exe=" .. exe
   end
-  ---@type boolean, string|string[]?, string?
-  local ok, res, res1 = pcall(cmd_build_fn, { exe = exe, cmd = cmd, noninteractive = conf.noninteractive })
+  local ok, elev_cmd, err = pcall(elev_cmd_build, { exe = exe, cmd = cmd, noninteractive = conf.noninteractive })
+  ---@cast elev_cmd +string?
   if not ok then
-    ---@cast res string
-    return nil, res
+    assert(type(elev_cmd) ~= "table")
+    return nil, elev_cmd
   end
-  ---@cast res string[]?
-  if not res then
-    return nil, res1
+  ---@cast elev_cmd -string?
+  if not elev_cmd then
+    return nil, err
   end
-  return res, nil
+  return elev_cmd, nil
 end
 
 ---@param src string
@@ -392,9 +402,9 @@ function Suda:do_bufenter(args)
   local stat = uv.fs_stat(path)
   -- 如果是目录
   if not stat then
-    local parent = vim.fs.dirname(path)
+    local parent = fs.dirname(path)
     -- 向上找出一个可写的目录，如果其中有目录不可读则表示需要提权
-    while parent ~= vim.fs.dirname(parent) do
+    while parent ~= fs.dirname(parent) do
       if is_writable(parent) then
         return
       end
@@ -403,7 +413,7 @@ function Suda:do_bufenter(args)
       if pstat and pstat.type == "directory" and not is_readable(path) then
         break
       end
-      parent = vim.fs.dirname(parent)
+      parent = fs.dirname(parent)
     end
   -- 如果这个文件是可读写的
   elseif stat.type == "directory" or (is_readable(path) and is_writable(path)) then
