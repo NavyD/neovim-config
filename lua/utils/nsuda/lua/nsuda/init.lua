@@ -628,7 +628,7 @@ end
 local function find_exepath(exes)
   for _, name in ipairs(exes) do
     local p = fn.exepath(name)
-    if p then
+    if p ~= "" then
       return p
     end
   end
@@ -639,7 +639,7 @@ end
 function M.setup(config)
   if not config.executable then
     local exe = find_exepath(is_windows and { "gsudo", "sudo" } or { "sudo" })
-    if not exe then
+    if not exe or exe == "" then
       log.error("Not found any exe")
       return
     end

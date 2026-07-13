@@ -3,6 +3,8 @@ return {
   {
     -- [nsuda — sudo plugin for Neovim](https://github.com/lambdalisue/vim-suda)
     dir = vim.fn.stdpath("config") .. "/lua/utils/nsuda",
+    ---@type nsuda.Config
+    ---@diagnostic disable-next-line: missing-fields
     opts = { smart_edit = true },
   },
   {
