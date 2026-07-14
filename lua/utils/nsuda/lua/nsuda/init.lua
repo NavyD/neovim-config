@@ -39,26 +39,20 @@ local function echo(msg, hl_group)
   api.nvim_echo(chunks, true, {})
 end
 
----@class nsuda.ElevationCmdBuildCtx
+---@class nsuda.BuildElevationCmdCtx
 ---@field exe string
 ---@field cmd string[]
 ---@field noninteractive boolean
 
----@alias nsuda.ElevationCmdBuildFn fun(ctx: nsuda.ElevationCmdBuildCtx): string[]?,string?
----@alias nsuda.ElevationCmdBuilds table<string, nsuda.ElevationCmdBuildFn>
-
----@class WriteErrorMatchCtx
----@field error string
----@field path string
----@field buf integer
+---@alias nsuda.BuildElevationCmds table<string, fun(ctx: nsuda.BuildElevationCmdCtx): string[]?,string?>
 
 ---@class nsuda.Config
 ---@field executable string
 ---@field noninteractive boolean
 ---@field smart_edit boolean
 ---@field build_copy_cmd fun(src: string, dst: string): string[] # Platform raw copy command (no elevation prefix)
----@field elevation_cmd_builds nsuda.ElevationCmdBuilds
----@field elevation_cmd_build_match_fn fun(exe: string): string
+---@field build_elevation_cmds nsuda.BuildElevationCmds
+---@field build_elevation_cmd_match fun(exe: string): string
 
 local is_windows = uv.os_uname().sysname == "Windows_NT"
 
@@ -79,26 +73,32 @@ local default_config = {
     -- Both `bs=1M` and `bs=1m` are non-POSIX
     return { "dd", "if=" .. src, "of=" .. dst, "bs=" .. 1024 * 1024 }
   end,
-  elevation_cmd_build_match_fn = function(exe)
+  build_elevation_cmd_match = function(exe)
     local name = fs.basename(exe)
     if is_windows then
       name = name:lower()
-      -- if name ~= "sudo.exe" then
-      --   name = fn.fnamemodify(name, ":r")
-      -- end
+      name = fn.fnamemodify(name, ":r")
     end
     return name
   end,
-  -- Default elevation_cmd_builds: each is fun(exe, cmd, ctx): string[]?, string?
-  elevation_cmd_builds = {
+  -- Default build_elevation_cmds: each is fun(exe, cmd, ctx): string[]?, string?
+  build_elevation_cmds = {
     sudo = function(ctx)
-      local exe = ctx.exe
-      local cmd = ctx.cmd
-      local check_cmd_args = { exe, "-n", "--validate" }
+      -- sudo.exe for windows
+      if is_windows then
+        -- 要求 sudo 配置 `sudo config --enable normal` 或在 设置 中指定，否则将会导致 sudo.exe 总是失败
+        -- https://learn.microsoft.com/zh-cn/windows/advanced-settings/sudo/#how-to-configure-sudo-for-windows
+        -- 指定 `--inline` 与 unix/sudo 行为类似，否则 sudo.exe 进程新建窗口立即返回
+        -- code=0 临时文件被删除导致 sudo.exe 在新窗口执行失败
+        return { ctx.exe, "--inline", unpack(ctx.cmd) }
+      end
+
+      -- sudo for unix
+      local check_cmd_args = { ctx.exe, "-n", "--validate" }
       echo("checking elevation cache with cmd=" .. vim.inspect(check_cmd_args))
       local r = vim.system(check_cmd_args, { text = true }):wait()
       if r.code == 0 then
-        return { exe, unpack(cmd) }
+        return { ctx.exe, unpack(ctx.cmd) }
       end
       if ctx.noninteractive then
         return nil, "sudo authentication required"
@@ -117,17 +117,17 @@ local default_config = {
         return nil, "sudo auth cancelled"
       end
 
-      local cache_args = { exe, "-S", "-p", "", "--validate" }
+      local cache_args = { ctx.exe, "-S", "-p", "", "--validate" }
       echo("caching elevation with cmd=" .. vim.inspect(cache_args))
       local cache_res = vim.system(cache_args, { text = true, stdin = pw }):wait()
       if cache_res.code ~= 0 then
         return nil, "sudo authentication failed"
       end
 
-      return { exe, "-n", unpack(cmd) }
+      return { ctx.exe, "-n", unpack(ctx.cmd) }
     end,
 
-    ["gsudo.exe"] = function(ctx)
+    gsudo = function(ctx)
       local check_cmd = { ctx.exe, "status", "--json" }
       echo("checking elevation cache with cmd=" .. vim.inspect(check_cmd))
       local check_res = vim.system(check_cmd, { text = true }):wait()
@@ -150,14 +150,6 @@ local default_config = {
       end
 
       return { ctx.exe, unpack(ctx.cmd) }, nil
-    end,
-
-    ["sudo.exe"] = function(ctx)
-      -- 要求 sudo 配置 `sudo config --enable normal` 或在 设置 中指定，否则将会导致 sudo.exe 总是失败
-      -- https://learn.microsoft.com/zh-cn/windows/advanced-settings/sudo/#how-to-configure-sudo-for-windows
-      -- 指定 `--inline` 与 unix/sudo 行为类似，否则 sudo.exe 进程新建窗口立即返回
-      -- code=0 临时文件被删除导致 sudo.exe 在新窗口执行失败
-      return { ctx.exe, "--inline", unpack(ctx.cmd) }
     end,
   },
 }
@@ -248,12 +240,12 @@ end
 function Suda:_build_elevation_cmd(cmd)
   local conf = self._config
   local exe = conf.executable
-  local key = conf.elevation_cmd_build_match_fn(exe)
-  local elev_cmd_build = conf.elevation_cmd_builds[key]
-  if not elev_cmd_build then
+  local key = conf.build_elevation_cmd_match(exe)
+  local build_elev_cmd = conf.build_elevation_cmds[key]
+  if not build_elev_cmd then
     return nil, "no elevation build key=" .. key .. " for exe=" .. exe
   end
-  local ok, elev_cmd, err = pcall(elev_cmd_build, { exe = exe, cmd = cmd, noninteractive = conf.noninteractive })
+  local ok, elev_cmd, err = pcall(build_elev_cmd, { exe = exe, cmd = cmd, noninteractive = conf.noninteractive })
   ---@cast elev_cmd +string?
   if not ok then
     assert(type(elev_cmd) ~= "table")
@@ -294,7 +286,9 @@ end
 ---@return string msg
 local function vim_exec(cmd, opts, dst)
   opts.cmdarg = opts.cmdarg or vim.v.cmdarg
-  opts.cmdbang = (opts.cmdbang == nil and vim.v.cmdbang or opts.cmdbang) == 1
+  if opts.cmdbang == nil then
+    opts.cmdbang = vim.v.cmdbang == 1
+  end
 
   -- 0write! ++bin /file
   -- 0read ++bin /file
