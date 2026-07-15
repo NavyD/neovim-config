@@ -94,25 +94,36 @@ local default_config = {
       end
 
       -- sudo for unix
+      local cmd_args = { ctx.exe, "-n", unpack(ctx.cmd) }
+      if ctx.noninteractive then
+        return cmd_args
+      end
+
       local check_cmd_args = { ctx.exe, "-n", "--validate" }
       echo("checking elevation cache with cmd=" .. vim.inspect(check_cmd_args))
       local r = vim.system(check_cmd_args, { text = true }):wait()
       if r.code == 0 then
-        return { ctx.exe, "-n", unpack(ctx.cmd) }
-      end
-      if ctx.noninteractive then
-        return nil, "sudo authentication required"
+        return cmd_args
       end
 
+      -- typos: disable-next-line
+      local noic = package.loaded["noice"]
+      -- 临时禁用 noic 避免 inputsecret 输入后崩溃
+      if noic then
+        noic.disable()
+      end
       local input_ok, pw = pcall(function()
         fn.inputsave()
-        vim.cmd("redraw")
-        return fn.inputsecret("Sudo password: ")
+        local _, pw = pcall(fn.inputsecret, "Sudo Password: ")
+        fn.inputrestore()
+        return pw
       end)
+      if noic then
+        noic.enable()
+      end
       if not input_ok then
         return nil, pw
       end
-      fn.inputrestore()
       if #pw == 0 then
         return nil, "sudo auth cancelled"
       end
@@ -124,7 +135,7 @@ local default_config = {
         return nil, "sudo authentication failed"
       end
 
-      return { ctx.exe, "-n", unpack(ctx.cmd) }
+      return cmd_args
     end,
 
     gsudo = function(ctx)
