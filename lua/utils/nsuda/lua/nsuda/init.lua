@@ -98,7 +98,7 @@ local default_config = {
       echo("checking elevation cache with cmd=" .. vim.inspect(check_cmd_args))
       local r = vim.system(check_cmd_args, { text = true }):wait()
       if r.code == 0 then
-        return { ctx.exe, unpack(ctx.cmd) }
+        return { ctx.exe, "-n", unpack(ctx.cmd) }
       end
       if ctx.noninteractive then
         return nil, "sudo authentication required"
@@ -314,7 +314,8 @@ function Suda:read(path, opts)
     return vim_exec("read", opts, path)
   end
   -- 文件不存在
-  if not uv.fs_stat(path) then
+  local stat, _, stat_err_name = uv.fs_stat(path)
+  if not stat and stat_err_name == "ENOENT" then
     return nil, nil
   end
 
