@@ -5,9 +5,9 @@ local api = vim.api
 local fn = vim.fn
 local fs = vim.fs
 
-local M = {}
-
-M._NAME = "nsuda"
+local M = {
+  _NAME = "nsuda",
+}
 
 local log = {}
 ---@param msg string
@@ -54,7 +54,7 @@ end
 ---@field build_elevation_cmds nsuda.BuildElevationCmds
 ---@field build_elevation_cmd_match fun(exe: string): string
 
-local is_windows = uv.os_uname().sysname == "Windows_NT"
+local is_windows = fn.has("win32") == 1
 
 ---@class nsuda.Suda
 ---@field _config nsuda.Config
@@ -574,12 +574,12 @@ function Suda:setup()
     "FileWritePre",
     "FileWritePost",
   }, {
-    group = api.nvim_create_augroup("suda_internal", { clear = true }),
+    group = api.nvim_create_augroup(M._NAME .. "_internal", { clear = true }),
     pattern = pattern,
     callback = function() end,
   })
 
-  local augroup = api.nvim_create_augroup("suda_edit", { clear = true })
+  local augroup = api.nvim_create_augroup(M._NAME .. "_edit", { clear = true })
   if self._config.smart_edit then
     api.nvim_create_autocmd("BufEnter", {
       group = augroup,
@@ -619,7 +619,12 @@ function Suda:setup()
   })
 
   api.nvim_create_user_command("SudaRead", function(opts)
-    local path = opts.args ~= "" and opts.args or fn.expand("%:p")
+    local path = opts.args
+    if path == "" then
+      path = fn.expand("%:p")
+      -- 当重新读取当前 buf 文件时删除 buf 再 edit 打开
+      vim.cmd("bwipeout")
+    end
     vim.cmd.edit(fn.fnameescape(protocol.join(path)))
   end, { nargs = "?", complete = "file" })
 
@@ -643,17 +648,22 @@ end
 
 ---@param config nsuda.Config
 function M.setup(config)
-  if not config.executable then
-    local exe = find_exepath(is_windows and { "gsudo", "sudo" } or { "sudo" })
-    if not exe or exe == "" then
-      log.error("Not found any exe")
-      return
-    end
-    config.executable = exe
-  end
+  api.nvim_create_autocmd("VimEnter", {
+    group = api.nvim_create_augroup(M._NAME .. "_setup", { clear = true }),
+    callback = vim.schedule_wrap(function()
+      if not config.executable then
+        local exe = find_exepath(is_windows and { "gsudo", "sudo" } or { "sudo" })
+        if not exe or exe == "" then
+          log.error("Not found any exe")
+          return
+        end
+        config.executable = exe
+      end
 
-  config = vim.tbl_deep_extend("keep", config or {}, default_config)
-  Suda.new(config):setup()
+      config = vim.tbl_deep_extend("keep", config or {}, default_config)
+      Suda.new(config):setup()
+    end),
+  })
 end
 
 return M
