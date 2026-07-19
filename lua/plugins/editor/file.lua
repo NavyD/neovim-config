@@ -1,8 +1,7 @@
 ---@type LazySpec
 return {
   {
-    -- [nsuda — sudo plugin for Neovim](https://github.com/lambdalisue/vim-suda)
-    dir = vim.fn.stdpath("config") .. "/lua/utils/nsuda",
+    dir = vim.fs.joinpath(vim.fn.stdpath("config"), "local_plugins/nsuda"),
     ---@type nsuda.Config
     ---@diagnostic disable-next-line: missing-fields
     opts = { smart_edit = true },

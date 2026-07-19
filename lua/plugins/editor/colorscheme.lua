@@ -47,7 +47,7 @@ return {
   --   },
   -- },
   {
-    dir = vim.fs.joinpath(vim.fn.stdpath("config"), "lua/utils/autotheme"),
+    dir = vim.fs.joinpath(vim.fn.stdpath("config"), "local_plugins/autotheme"),
     dependencies = { "nvim-neotest/nvim-nio" },
     lazy = false,
     opts = {},
