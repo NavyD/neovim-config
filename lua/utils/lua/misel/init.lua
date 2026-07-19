@@ -1,8 +1,8 @@
-local uv = vim.uv
 local log_levels = vim.log.levels
-local json = vim.json
 local env = vim.env
 local api = vim.api
+local fn = vim.fn
+local json_dec = vim.json.decode
 
 local nio = require("nio")
 local proc = require("utils.process")
@@ -167,10 +167,11 @@ function MiseEnvState:reload_lazy_plugins(curr_envs)
   end)
 end
 
+local is_windows = fn.has("win32") == 1
+
 ---@param pathstr string
 ---@return string
 local function deduplicate_pathstr(pathstr)
-  local is_windows = uv.os_uname().sysname:match("Windows") ~= nil
   local path_sep = is_windows and ";" or ":"
 
   -- -- 2. 将 PATH 字符串拆分为表
@@ -212,7 +213,7 @@ local function get_mise_env(bin_path, cwd)
   if not env_str then
     return nil, "not found stdout for mise env"
   end
-  local env_o = json.decode(env_str, { luanil = { object = true, array = true } })
+  local env_o = json_dec(env_str, { luanil = { object = true, array = true } })
   if not env_o then
     return nil, "Failed to decode json with string: " .. env_str
   end
@@ -289,22 +290,8 @@ function MiseEnvState:set_mise_env(curr_env)
 end
 
 ---@async
-function MiseEnvState:load_mise_env()
-  local event = vim.v.event
-  -- DirChangedPre=directory, DirChanged=cwd,
-  -- local cwd = fs.normalize(event.directory or event.cwd or uv.cwd())
-  ---@type string|nil
-  ---@diagnostic disable-next-line:undefined-field
-  local cwd = event.directory or event.cwd
-  if not cwd then
-    local uv_cwd, cwd_err_name, cwd_err = uv.cwd()
-    if not uv_cwd then
-      vim.notify(("Failed to get cwd by %s: %s"):format(cwd_err_name or "", cwd_err or ""), log_levels.ERROR)
-      return
-    end
-    cwd = uv_cwd
-  end
-
+---@param cwd string
+function MiseEnvState:load_mise_env(cwd)
   -- 上次切换的目录与此次一样则跳过
   if cwd == self.prev_cwd then
     return
@@ -347,15 +334,16 @@ function MiseEnvState:load_mise_env()
   self.prev_cwd = cwd
 end
 
-function MiseEnvState:load_env()
+---@param cwd string
+function MiseEnvState:load_env(cwd)
   nio.run(function()
-    self:load_mise_env()
+    self:load_mise_env(cwd)
     -- 清空
     self.loading_cwd = nil
   end)
 end
 
----@param opts? misel.EnvOpts
+---@param opts misel.EnvOpts?
 function M.setup(opts)
   local me = MiseEnvState.new(opts)
   local augroup = api.nvim_create_augroup("misel_env", { clear = true })
@@ -364,17 +352,21 @@ function M.setup(opts)
     api.nvim_create_autocmd("VimEnter", {
       group = augroup,
       callback = function()
-        me:load_env()
+        me:load_env(fn.getcwd())
       end,
     })
   end
 
   api.nvim_create_autocmd("DirChanged", {
+    -- 仅使用 cd 切换时触发
+    pattern = { "global" },
     group = augroup,
-    callback = function(_)
-      if vim.v.event.scope == "global" then
-        me:load_env()
-      end
+    callback = function()
+      local event = vim.v.event
+      -- DirChangedPre=directory, DirChanged=cwd,
+      ---@diagnostic disable-next-line: undefined-field
+      local cwd = event.directory or event.cwd or fn.getcwd()
+      me:load_env(cwd)
     end,
   })
 end
