@@ -141,6 +141,7 @@ return {
       "servers.*.keys",
       -- 需要为每个类型分别处理
       "servers.harper_ls.filetypes",
+      "servers.yamlls.filetypes",
     },
   },
 }
