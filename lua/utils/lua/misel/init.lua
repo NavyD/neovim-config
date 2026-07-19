@@ -2,6 +2,7 @@ local uv = vim.uv
 local log_levels = vim.log.levels
 local json = vim.json
 local env = vim.env
+local api = vim.api
 
 local nio = require("nio")
 local proc = require("utils.process")
@@ -357,12 +358,19 @@ end
 ---@param opts? misel.EnvOpts
 function M.setup(opts)
   local me = MiseEnvState.new(opts)
+  local augroup = api.nvim_create_augroup("misel_env", { clear = true })
+
   if me.config.load_env_immediately then
-    me:load_env()
+    api.nvim_create_autocmd("VimEnter", {
+      group = augroup,
+      callback = function()
+        me:load_env()
+      end,
+    })
   end
 
-  vim.api.nvim_create_autocmd("DirChanged", {
-    group = vim.api.nvim_create_augroup("mise", { clear = true }),
+  api.nvim_create_autocmd("DirChanged", {
+    group = augroup,
     callback = function(_)
       if vim.v.event.scope == "global" then
         me:load_env()
