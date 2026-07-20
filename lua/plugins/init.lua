@@ -8,9 +8,10 @@
 ---@field condition fun(ctx: LazyVimLinterCtx):boolean
 
 -- https://github.com/LazyVim/LazyVim/blob/c64a61734fc9d45470a72603395c02137802bc6f/lua/lazyvim/plugins/linting.lua#L7
+---@alias LazyVimLintOptsFtLinters string[] | { [integer]: string, _compound_ft: boolean?}
 ---@class LazyVimLintOpts
 ---@field events? string[]
----@field linters_by_ft? table<string, string[]>
+---@field linters_by_ft? table<string, LazyVimLintOptsFtLinters>
 ---@field linters? table<string, LazyVimLinter | fun():lint.Linter>
 
 ---@module 'lazyvim.plugins.lsp'
