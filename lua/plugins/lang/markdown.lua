@@ -1,3 +1,5 @@
+local ulsp = require("utils.lsp")
+
 ---@type LazyPluginSpec[]
 return {
   {
@@ -214,7 +216,8 @@ return {
   {
     "neovim/nvim-lspconfig",
     optional = true,
-    ---@type LazyVimLspOpts
-    opts = { servers = { harper_ls = { filetypes = { "markdown" } } } },
+    opts = ulsp.merge_opts_fn({
+      servers = { harper_ls = { filetypes = { "markdown" } } },
+    }),
   },
 }

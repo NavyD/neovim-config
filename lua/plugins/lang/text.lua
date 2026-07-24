@@ -1,16 +1,17 @@
+local ulsp = require("utils.lsp")
+
 ---@module 'lazy'
 ---@type LazySpec
 return {
   {
     "neovim/nvim-lspconfig",
-    ---@type LazyVimLspOpts
-    opts = {
+    opts = ulsp.merge_opts_fn({
       servers = {
         -- Offline, privacy-first grammar checker. Fast, open-source, Rust-powered
         -- https://github.com/automattic/harper
         harper_ls = {
           -- https://github.com/neovim/nvim-lspconfig/blob/master/lua/lspconfig/configs/harper_ls.lua
-          filetypes = { "text" }, -- WARN: 无法检查 yaml 类型
+          filetypes = { "text" },
           -- https://writewithharper.com/docs/integrations/neovim#Optional-Configuration
           settings = {
             ["harper-ls"] = {
@@ -44,7 +45,7 @@ return {
         --   return false
         -- end,
       },
-    },
+    }),
   },
   {
     "mason-org/mason.nvim",

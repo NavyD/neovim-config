@@ -1,3 +1,5 @@
+local ulsp = require("utils.lsp")
+
 local action_ft = "yaml.ghaction"
 vim.filetype.add({
   pattern = {
@@ -12,14 +14,12 @@ vim.filetype.add({
 return {
   {
     "neovim/nvim-lspconfig",
-    ---@type LazyVimLspOpts
-    opts = {
+    opts = ulsp.merge_opts_fn({
       servers = {
-        gh_actions_ls = { filetypes = { "yaml", action_ft } },
-        -- 同时启用 yamlls
+        gh_actions_ls = { filetypes = { action_ft } },
         yamlls = { filetypes = { action_ft } },
       },
-    },
+    }),
   },
   {
     "mason-org/mason.nvim",

@@ -132,16 +132,4 @@ return {
         or (vim.fn.executable("delta") == 1 and "delta" or "vim")
     end,
   },
-  {
-    "neovim/nvim-lspconfig",
-    optional = true,
-    opts_extend = {
-      -- NOTE: opts_extend 无法合并自身，需要处理 lazyvim lspconfig 中的定义类型
-      -- https://github.com/LazyVim/LazyVim/blob/fca0af57cc3851b14f96a795a9c9bfafc5096dd1/lua/lazyvim/plugins/lsp/init.lua#L10
-      "servers.*.keys",
-      -- 需要为每个类型分别处理
-      "servers.harper_ls.filetypes",
-      "servers.yamlls.filetypes",
-    },
-  },
 }
