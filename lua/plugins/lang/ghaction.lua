@@ -1,4 +1,4 @@
-local ulsp = require("utils.lsp")
+local help = require("utils.help")
 
 local action_ft = "yaml.ghaction"
 vim.filetype.add({
@@ -14,7 +14,7 @@ vim.filetype.add({
 return {
   {
     "neovim/nvim-lspconfig",
-    opts = ulsp.merge_opts_fn({
+    opts = help.merge_lsp_opts_fn({
       servers = {
         gh_actions_ls = { filetypes = { action_ft } },
         yamlls = { filetypes = { action_ft } },

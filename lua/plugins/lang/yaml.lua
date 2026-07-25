@@ -1,4 +1,4 @@
-local ulsp = require("utils.lsp")
+local help = require("utils.help")
 
 -- 检查 yamllint 的配置文件是否存在，如果不存在则返回 `-d relaxed` 避免过多警告
 -- https://yamllint.readthedocs.io/en/stable/configuration.html#configuration
@@ -47,7 +47,7 @@ end
 return {
   {
     "neovim/nvim-lspconfig",
-    opts = ulsp.merge_opts_fn({
+    opts = help.merge_lsp_opts_fn({
       servers = { yamlls = { filetypes = { "yaml", "yaml.jinja", "yaml.gotmpl" } } },
     }),
   },

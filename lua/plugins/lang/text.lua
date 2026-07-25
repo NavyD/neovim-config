@@ -1,11 +1,11 @@
-local ulsp = require("utils.lsp")
+local help = require("utils.help")
 
 ---@module 'lazy'
 ---@type LazySpec
 return {
   {
     "neovim/nvim-lspconfig",
-    opts = ulsp.merge_opts_fn({
+    opts = help.merge_lsp_opts_fn({
       servers = {
         -- Offline, privacy-first grammar checker. Fast, open-source, Rust-powered
         -- https://github.com/automattic/harper

@@ -1,6 +1,6 @@
 local M = {}
 
-local function merge(_, prev_value, value)
+local function merge_opts(_, prev_value, value)
   -- 如果新值为 nil，保留旧值（一般不会）
   if value == nil then
     return prev_value
@@ -20,7 +20,7 @@ local function merge(_, prev_value, value)
       return vim.iter({ value, prev_value }):flatten():unique():totable()
     -- 两个都是字典：递归合并（自动进行，但当前函数不递归，需要让深度合并继续处理）
     elseif not prev_islist and not val_islist then
-      return vim.tbl_deep_extend(merge, prev_value, value)
+      return vim.tbl_deep_extend(merge_opts, prev_value, value)
     end
   end
   -- 否则返回新值
@@ -32,10 +32,10 @@ end
 -- 不支持覆盖，所有需要这个函数合并到配置中
 ---@param opts LazyVimLspOpts
 ---@return fun(lazyplugin: any, opts: table): table
-function M.merge_opts_fn(opts)
+function M.merge_lsp_opts_fn(opts)
   ---@param old_opts LazyVimLspOpts
   return function(_, old_opts)
-    return vim.tbl_deep_extend(merge, old_opts, opts)
+    return vim.tbl_deep_extend(merge_opts, old_opts, opts)
   end
 end
 
