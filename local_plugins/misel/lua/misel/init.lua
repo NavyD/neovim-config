@@ -168,13 +168,12 @@ function MiseEnvState:reload_lazy_plugins(curr_envs)
 end
 
 local is_windows = fn.has("win32") == 1
+local path_sep = is_windows and ";" or ":"
 
 ---@param pathstr string
 ---@return string
 local function deduplicate_pathstr(pathstr)
-  local path_sep = is_windows and ";" or ":"
-
-  -- -- 2. 将 PATH 字符串拆分为表
+  -- 2. 将 PATH 字符串拆分为表
   local path_list = vim.split(pathstr, path_sep)
   -- 3. 去重逻辑
   local unique_paths = {}
@@ -231,6 +230,23 @@ local function getenvs(...)
   return envs
 end
 
+---@param e table<string, string>
+---@return string
+local function env2diffstr(e)
+  return vim
+    .iter(e)
+    ---@param k string
+    ---@param v string
+    :map(function(k, v)
+      -- 对于 PATH 类型的变量值使用 `:\nPATH=` 连接方便 diff
+      if vim.endswith(k, "PATH") then
+        v = table.concat(vim.split(v, path_sep), string.format("%s\n%s=", path_sep, k))
+      end
+      return string.format("%s=%s", k, v)
+    end)
+    :join("\n")
+end
+
 -- 当执行 mise env 期间更新了指定的环境变量时会多次尝试重新获取直到成功，
 -- 可以避免在 mise env 期间环境变量被修改的问题
 ---@async
@@ -255,11 +271,12 @@ function MiseEnvState:get_consistent_mise_env()
     end
 
     count = count + 1
-    if count >= max_count then
+    if count > max_count then
       return nil, ("Failed to get consistent %s env %s times"):format(env_names, max_count)
     end
 
-    local diffstr = vim.text.diff(vim.inspect(prev_envs), vim.inspect(curr_envs))
+    -- local diffstr = vim.text.diff(vim.inspect(prev_envs), vim.inspect(curr_envs))
+    local diffstr = vim.text.diff(env2diffstr(prev_envs), env2diffstr(curr_envs))
     vim.notify(("Re-acquiring mise env due to variable change: %s"):format(diffstr), log_levels.WARN)
     prev_envs = curr_envs
   end
