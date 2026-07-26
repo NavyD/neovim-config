@@ -1,6 +1,25 @@
 ---@type LazySpec
 return {
   {
+    "nvim-treesitter/nvim-treesitter",
+    ---@module 'lazyvim'
+    ---@param opts lazyvim.TSConfig
+    opts = function(_, opts)
+      -- 由于安装编译 gitcommit 需要大概 4G 左右的内存，
+      -- 在低内存机器中安装会导致内溢出，编译失败
+      local idx, _ = vim
+        .iter(opts.ensure_installed or {})
+        :enumerate()
+        :find(function(_, v)
+          return v == "gitcommit"
+        end)
+      --- 如果总内存小于 4G
+      if idx and vim.uv.get_total_memory() / (1024 ^ 3) < 4 then
+        table.remove(opts.ensure_installed, idx)
+      end
+    end,
+  },
+  {
     -- https://github.com/esmuellert/codediff.nvim
     "esmuellert/codediff.nvim",
     version = "2",
