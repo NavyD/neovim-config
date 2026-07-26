@@ -1,7 +1,14 @@
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
   local lazyrepo = "https://github.com/folke/lazy.nvim.git"
-  local out = vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
+  local out = vim.fn.system({
+    "git",
+    "clone",
+    "--filter=blob:none",
+    "--branch=stable",
+    lazyrepo,
+    lazypath,
+  })
   if vim.v.shell_error ~= 0 then
     vim.api.nvim_echo({
       { "Failed to clone lazy.nvim:\n", "ErrorMsg" },
@@ -61,7 +68,11 @@ require("lazy").setup({
   install = { colorscheme = { "tokyonight", "habamax" } },
   -- [How do I stop "Plugin Updates" from appearing? #3298](https://github.com/LazyVim/LazyVim/discussions/3298)
   -- 禁用更新检测加快启动速度。即使配置 frequency 也会 lazy 启动大量 git 进程减慢真实打开速度
-  checker = { enabled = false, notify = false, frequency = 60 * 60 * 24 * 7 }, -- automatically check for plugin updates
+  checker = {
+    enabled = vim.fn.has("win32") == 0,
+    notify = false,
+    frequency = 60 * 60 * 24 * 7,
+  }, -- automatically check for plugin updates
   performance = {
     rtp = {
       -- disable some rtp plugins
