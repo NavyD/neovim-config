@@ -33,7 +33,7 @@ local function get_yamllint_prepend_args()
     local data = {
       extends = "relaxed",
       rules = {
-        ["line-length"] = { max = ec.max_line_length or 120 },
+        ["line-length"] = ec.max_line_length and { max = ec.max_line_length } or "disable",
       },
     }
     return json_enc(data)
@@ -48,7 +48,7 @@ return {
   {
     "neovim/nvim-lspconfig",
     opts = help.merge_lsp_opts_fn({
-      servers = { yamlls = { filetypes = { "yaml", "yaml.jinja", "yaml.gotmpl" } } },
+      servers = { yamlls = { filetypes = { "yaml" } } },
     }),
   },
   {
