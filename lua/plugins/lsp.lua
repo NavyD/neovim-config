@@ -132,4 +132,19 @@ return {
         or (vim.fn.executable("delta") == 1 and "delta" or "vim")
     end,
   },
+  {
+    -- https://github.com/davidyz/inlayhint-filler.nvim
+    -- 直接“采纳”语言服务器（LSP）推断出的类型提示，并将其插入到代码中
+    "Davidyz/inlayhint-filler.nvim",
+    keys = {
+      {
+        "<Leader>cI",
+        function()
+          require("inlayhint-filler").fill()
+        end,
+        desc = "Insert the inlay-hint under cursor into the buffer.",
+        mode = { "n", "v" }, -- include 'v' if you want to use it in visual selection mode
+      },
+    },
+  },
 }
