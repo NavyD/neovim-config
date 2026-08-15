@@ -1,3 +1,7 @@
+if true then
+  return {}
+end
+
 local function get_ollama_api_key()
   return "_"
 end
