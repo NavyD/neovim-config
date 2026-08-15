@@ -32,8 +32,16 @@ end
 -- 不支持覆盖，所有需要这个函数合并到配置中
 ---@param opts LazyVimLspOpts
 ---@return fun(lazyplugin: any, opts: table): table
+---@deprecated
 function M.merge_lsp_opts_fn(opts)
-  ---@param old_opts LazyVimLspOpts
+  return M.merge_opts(opts)
+end
+
+-- 合并 table。可以使用 `merge_opts({} --[[@as SomeType]])` 添加类型
+---@generic Opts: table
+---@param opts Opts
+---@return fun(lazyplugin: any, opts: Opts): Opts
+function M.merge_opts(opts)
   return function(_, old_opts)
     return vim.tbl_deep_extend(merge_opts, old_opts, opts)
   end
