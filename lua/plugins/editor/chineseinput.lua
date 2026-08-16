@@ -59,12 +59,16 @@ local function build_jieba_co(plugin)
     "5",
     "--retry-max-time",
     "10",
-    "--retry-connrefused",
+    -- "--retry-connrefused",
+    -- curl: (56) OpenSSL SSL_read: OpenSSL/3.5.6: error:0A000126:SSL routines::unexpected eof while reading, errno 0
+    -- curl: (56) schannel: server closed abruptly (missing close_notify)
+    -- 避免典型的网络错误中止，需要确保 url 有效
+    "--retry-all-errors",
     -- 连接超时
     "--connect-timeout",
     "3",
     "--max-time",
-    "10",
+    "15",
     "-fsSL",
     "--output",
     lib_path_tmp,
