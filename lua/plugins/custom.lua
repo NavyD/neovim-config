@@ -18,7 +18,8 @@ return {
         -- 使用 mason 提供的最新版本
         vim.list_extend(new_installeds, { "rust-analyzer" })
       end
-      opts.ensure_installed = vim.list_extend(opts.ensure_installed or {}, new_installeds)
+      opts.ensure_installed =
+        vim.list_extend(opts.ensure_installed or {}, new_installeds)
     end,
   },
 }

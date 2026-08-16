@@ -51,11 +51,24 @@ local default_config = {
     local nameupper = mode_name:upper()
     local lineinfo = src_path .. ":" .. src_line
     local ms = math.floor(vim.uv.hrtime() / 1000000) % 1000
-    local time_str = string.format("%s.%03d", os.date("%Y-%m-%d %H:%M:%S", os.time()), ms)
+    local time_str =
+      string.format("%s.%03d", os.date("%Y-%m-%d %H:%M:%S", os.time()), ms)
     if is_console then
-      return string.format("[%3s][%s] %s: %s", nameupper, time_str, lineinfo, msg)
+      return string.format(
+        "[%3s][%s] %s: %s",
+        nameupper,
+        time_str,
+        lineinfo,
+        msg
+      )
     else
-      return string.format("[%3s][%s] %s: %s\n", nameupper, time_str, lineinfo, msg)
+      return string.format(
+        "[%3s][%s] %s: %s\n",
+        nameupper,
+        time_str,
+        lineinfo,
+        msg
+      )
     end
   end,
   --- log.log 通常被 log.info 调用，所有需要从 3 开始以获取 log.info 外的调用者信息
@@ -112,7 +125,10 @@ local function make_msg_args2string(config, opts, msg_args)
   local str_args = vim
     .iter(msg_args)
     :map(function(arg)
-      return make_string(arg, { float_precision = config.float_precision, lazy = opts.lazy })
+      return make_string(
+        arg,
+        { float_precision = config.float_precision, lazy = opts.lazy }
+      )
     end)
     :totable()
   if not opts.fmt then
@@ -150,7 +166,8 @@ local function output_to_console(config, level_config, console_string)
     local prefix = (i == 1) and string.format("[%s]", config.plugin) or ""
     table.insert(chunks, {
       prefix .. line,
-      (config.highlights and level_config.hl ~= "None" and level_config.hl) or "None",
+      (config.highlights and level_config.hl ~= "None" and level_config.hl)
+        or "None",
     })
   end
   vim.api.nvim_echo(chunks, true, {})
@@ -167,7 +184,8 @@ end
 local function gen_log_fn(config)
   ---计算最终的输出文件路径
   ---@type string
-  local outfile = config.outfile or fs.joinpath(fn.stdpath("log"), config.plugin .. ".log")
+  local outfile = config.outfile
+    or fs.joinpath(fn.stdpath("log"), config.plugin .. ".log")
 
   ---级别名称到数字（越高越严重）
   local levels = {}
@@ -211,7 +229,8 @@ local function gen_log_fn(config)
 
     -- 输出到控制台（除非 file_only）
     if config.use_console and not opts.file_only then
-      local console_string = config.fmt_msg(true, level_config.name, src_path, src_line, msg)
+      local console_string =
+        config.fmt_msg(true, level_config.name, src_path, src_line, msg)
       vim.schedule(function()
         output_to_console(config, level_config, console_string)
       end)
@@ -219,7 +238,8 @@ local function gen_log_fn(config)
 
     -- 输出到文件
     if config.use_file then
-      local file_string = config.fmt_msg(false, level_config.name, src_path, src_line, msg)
+      local file_string =
+        config.fmt_msg(false, level_config.name, src_path, src_line, msg)
       write_to_file(file_string, outfile)
     end
 

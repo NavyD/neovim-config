@@ -41,7 +41,11 @@ return {
     -- 参考github相关仓库，或使用`VeryLazy`事件，否则无效
     event = { "BufReadPost", "BufAdd", "BufNewFile" },
     keys = {
-      { "<leader>uR", "<cmd>ScrollViewToggle<cr>", desc = "Toggle Scroll View" },
+      {
+        "<leader>uR",
+        "<cmd>ScrollViewToggle<cr>",
+        desc = "Toggle Scroll View",
+      },
     },
     opts = {},
   },

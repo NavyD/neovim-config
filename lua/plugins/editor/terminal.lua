@@ -17,7 +17,10 @@ local function get_snacks_terminal_key(swin)
   end
 
   local key = "Snacks_terminal_height"
-  local tid = Snacks.terminal.tid(term.cmd, { cwd = term.cwd, env = term.env, count = term.id })
+  local tid = Snacks.terminal.tid(
+    term.cmd,
+    { cwd = term.cwd, env = term.env, count = term.id }
+  )
   key = key .. "_" .. vim.fn.sha256(tid):sub(1, 8)
   -- vim.notify("term key=" .. key .. " for tid=" .. tid)
   return key
@@ -86,10 +89,14 @@ return {
         auto_insert = false,
         hack_on_open = function(term_win, _, _)
           -- 在离开 buf 前更新 last_inserted 为当前的 mode 是否为插入模式
-          term_win:on({ "BufLeave", "BufHidden", "BufDelete", "ExitPre" }, function()
-            local m = vim.api.nvim_get_mode()
-            vim.g[last_inserted_key] = m.mode == "t"
-          end, { buf = true })
+          term_win:on(
+            { "BufLeave", "BufHidden", "BufDelete", "ExitPre" },
+            function()
+              local m = vim.api.nvim_get_mode()
+              vim.g[last_inserted_key] = m.mode == "t"
+            end,
+            { buf = true }
+          )
           -- 在进入 buf 时根据上次是否为插入模式决定是否插入
           term_win:on("BufEnter", function()
             if vim.g[last_inserted_key] then

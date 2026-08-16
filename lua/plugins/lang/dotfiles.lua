@@ -30,13 +30,21 @@ return {
     init = function()
       require("nio").run(function()
         -- 获取 cz 实际的源目录
-        local cz_src_sc = require("utils.process").run_co({ "chezmoi", "source-path" }, { text = true })
+        local cz_src_sc = require("utils.process").run_co(
+          { "chezmoi", "source-path" },
+          { text = true }
+        )
         -- fix: 在windows上无HOME变量导致nil连接str出错
-        local sc_src_path =
-          vim.fs.joinpath(os.getenv(jit.os == "Windows" and "USERPROFILE" or "HOME"), ".local/share/chezmoi")
+        local sc_src_path = vim.fs.joinpath(
+          os.getenv(jit.os == "Windows" and "USERPROFILE" or "HOME"),
+          ".local/share/chezmoi"
+        )
         if cz_src_sc.code ~= 0 then
           vim.notify(
-            "Fallback chezmoi source path to " .. sc_src_path .. " by error: " .. (cz_src_sc.stderr or ""),
+            "Fallback chezmoi source path to "
+              .. sc_src_path
+              .. " by error: "
+              .. (cz_src_sc.stderr or ""),
             vim.log.levels.WARN
           )
         else

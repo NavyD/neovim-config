@@ -22,7 +22,8 @@ return {
 
         -- 获取当前光标所在位置由 treesitter 配置的语言
         local line, column = vim.fn.line(".") - 1, vim.fn.col(".") - 1
-        local language = parser:language_for_range({ line, column, line, column + 1 }):lang()
+        local language =
+          parser:language_for_range({ line, column, line, column + 1 }):lang()
         -- 如果当前 buf 的语言与当前位置的语言一致时跳过
         if language == parser:lang() or language == "markdown_inline" then
           return
@@ -30,7 +31,10 @@ return {
 
         vim.b.otter_parsers_attached = vim.b.otter_parsers_attached or {}
         if not vim.b.otter_parsers_attached[language] then
-          vim.notify("Activating otter with language `" .. language .. "`", vim.log.levels.INFO)
+          vim.notify(
+            "Activating otter with language `" .. language .. "`",
+            vim.log.levels.INFO
+          )
           vim.b.otter_parsers_attached[language] = true
           vim.schedule(function()
             local otter = require("otter")
@@ -41,11 +45,17 @@ return {
 
       -- 使用 filetype 的同时结合其他事件如 InsertEnter 设置 autocmd
       vim.api.nvim_create_autocmd("FileType", {
-        group = vim.api.nvim_create_augroup("otter_autostart_ft", { clear = true }),
+        group = vim.api.nvim_create_augroup(
+          "otter_autostart_ft",
+          { clear = true }
+        ),
         pattern = { "markdown", "yaml", "toml", "rust", "json" },
         callback = function(args)
           vim.api.nvim_create_autocmd("InsertEnter", {
-            group = vim.api.nvim_create_augroup("otter_autostart_buf", { clear = true }),
+            group = vim.api.nvim_create_augroup(
+              "otter_autostart_buf",
+              { clear = true }
+            ),
             -- 为当前缓冲区设置插入模式相关的自动命令
             buffer = args.buf,
             callback = activate_otter_on_cursor,
@@ -77,7 +87,11 @@ return {
     },
     keys = {
       -- suggested keymap
-      { "<leader>P", "<cmd>PasteImage<cr>", desc = "Paste image from system clipboard" },
+      {
+        "<leader>P",
+        "<cmd>PasteImage<cr>",
+        desc = "Paste image from system clipboard",
+      },
     },
   },
   { -- [Bullets.vim is a Vim/NeoVim plugin for automated bullet lists](https://github.com/bullets-vim/bullets.vim)
@@ -96,7 +110,8 @@ return {
       vim.g.bullets_delete_last_bullet_if_empty = 1
 
       -- 默认生效的类型
-      vim.g.bullets_enabled_file_types = { "markdown", "text", "gitcommit", "scratch" }
+      vim.g.bullets_enabled_file_types =
+        { "markdown", "text", "gitcommit", "scratch" }
     end,
   },
   { -- [About Easily insert and edit markdown tables using Neovim with a live preview and useful helpers](https://github.com/Myzel394/easytables.nvim)
@@ -154,7 +169,8 @@ return {
         ---@type MasonSettings
         opts = {
           -- 在 windows 上无法安装 tree-sitter-cli 禁用避免重复安装
-          ensure_installed = jit.os ~= "Windows" and { "tree-sitter-cli" } or {},
+          ensure_installed = jit.os ~= "Windows" and { "tree-sitter-cli" }
+            or {},
         },
       },
       {

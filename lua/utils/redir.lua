@@ -50,13 +50,19 @@ local function redir_shell_command(cmd, lines, vertical, stderr_p)
     if shell_exe == "pwsh" or shell_exe == "powershell" then
       -- 找出 `-command` 以 `-c` 开头的所有情况都允许
       local cmd_start_idx, cmd_end_idx = shellcmdflag:find("%s*-[cC]%w*%s*")
-      assert(cmd_start_idx ~= nil and cmd_end_idx ~= nil, "Invalid shellcmdflag " .. shellcmdflag)
+      assert(
+        cmd_start_idx ~= nil and cmd_end_idx ~= nil,
+        "Invalid shellcmdflag " .. shellcmdflag
+      )
 
       -- 解析 `-command` 前的所有命令为列表
       local opts = shlex.split(shellcmdflag:sub(1, cmd_start_idx - 1))
       vim.list_extend(shell_args, opts)
       -- 取 `-command`
-      table.insert(shell_args, vim.trim(shellcmdflag:sub(cmd_start_idx, cmd_end_idx)))
+      table.insert(
+        shell_args,
+        vim.trim(shellcmdflag:sub(cmd_start_idx, cmd_end_idx))
+      )
 
       -- 取可能存在的命令
       local cmd_flag_arg = shellcmdflag:sub(cmd_end_idx + 1)

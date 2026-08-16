@@ -34,12 +34,17 @@ return {
         -- Programmatically get the path for installations #33
         -- https://github.com/mason-org/mason.nvim/discussions/33#discussioncomment-14936037
         -- NOTE: $MASON 环境变量需要 mason 插件加载才有效
-        local mason_root = vim.env.MASON or require("mason.settings").current.install_root_dir
+        local mason_root = vim.env.MASON
+          or require("mason.settings").current.install_root_dir
         if not mason_root then
-          vim.notify("Not found mason root for powershell-editor-services", vim.log.levels.ERROR)
+          vim.notify(
+            "Not found mason root for powershell-editor-services",
+            vim.log.levels.ERROR
+          )
           return
         end
-        opts.bundle_path = vim.fs.joinpath(mason_root, "packages/powershell-editor-services")
+        opts.bundle_path =
+          vim.fs.joinpath(mason_root, "packages/powershell-editor-services")
       end
       require("powershell").setup(opts)
     end,

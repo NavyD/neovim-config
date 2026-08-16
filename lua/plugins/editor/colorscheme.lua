@@ -28,7 +28,11 @@ return {
       require("transparent").setup({ extra_groups = extra_groups })
     end,
     keys = {
-      { "<leader>uB", "<cmd>TransparentToggle<cr>", { desc = "Toggle transparency" } },
+      {
+        "<leader>uB",
+        "<cmd>TransparentToggle<cr>",
+        { desc = "Toggle transparency" },
+      },
     },
   },
   -- {

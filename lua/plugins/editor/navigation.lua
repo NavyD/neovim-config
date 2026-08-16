@@ -159,7 +159,12 @@ return {
       box_style = "sharp",
     },
     keys = {
-      { "<leader>cv", "<cmd>Videre<cr>", ft = { "json", "yaml", "toml", "xml" }, desc = "View as graph" },
+      {
+        "<leader>cv",
+        "<cmd>Videre<cr>",
+        ft = { "json", "yaml", "toml", "xml" },
+        desc = "View as graph",
+      },
     },
   },
 }

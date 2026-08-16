@@ -14,6 +14,8 @@ return {
     opts = {},
     dependencies = { { "nvim-mini/mini.icons", opts = {} } },
     lazy = false,
-    keys = { { "<leader>f-", "<CMD>Oil<CR>", { desc = "Open parent directory" } } },
+    keys = {
+      { "<leader>f-", "<CMD>Oil<CR>", { desc = "Open parent directory" } },
+    },
   },
 }

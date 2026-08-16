@@ -6,7 +6,11 @@ local function get_yamllint_prepend_args()
   -- 如果存在任意的配置文件
   if
     vim
-      .iter({ "$XDG_CONFIG_HOME/yamllint/config", "~/.config/yamllint/config", "$YAMLLINT_CONFIG_FILE" })
+      .iter({
+        "$XDG_CONFIG_HOME/yamllint/config",
+        "~/.config/yamllint/config",
+        "$YAMLLINT_CONFIG_FILE",
+      })
       :map(vim.fn.expand)
       :any(function(v)
         return vim.uv.fs_stat(v) ~= nil
@@ -33,7 +37,8 @@ local function get_yamllint_prepend_args()
     local data = {
       extends = "relaxed",
       rules = {
-        ["line-length"] = ec.max_line_length and { max = ec.max_line_length } or "disable",
+        ["line-length"] = ec.max_line_length and { max = ec.max_line_length }
+          or "disable",
       },
     }
     return json_enc(data)

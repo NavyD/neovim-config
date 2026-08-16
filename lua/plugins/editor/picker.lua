@@ -66,7 +66,11 @@ return {
     -- NeuralOpen implements lazy loading internally. It needs to be loaded for recency tracking to work.
     lazy = false,
     keys = {
-      { "<leader><space>", "<Plug>(NeuralOpen)", desc = "Neural Open Files with Snacks.picker" },
+      {
+        "<leader><space>",
+        "<Plug>(NeuralOpen)",
+        desc = "Neural Open Files with Snacks.picker",
+      },
     },
     -- opts are optional. NeuralOpen will automatically use the defaults below.
     ---@module 'neural-open'

@@ -55,11 +55,16 @@ return {
         -- don't truncate source_icon
         ellipsis = false,
         text = function(ctx)
-          return cmp_source_icons[ctx.source_name:lower()] or cmp_source_icons._fallback
+          return cmp_source_icons[ctx.source_name:lower()]
+            or cmp_source_icons._fallback
         end,
         highlight = "BlinkCmpSource",
       }
-      cmp_source_icons = vim.tbl_extend("force", cmp_source_icons, opts.completion_source_icons or {})
+      cmp_source_icons = vim.tbl_extend(
+        "force",
+        cmp_source_icons,
+        opts.completion_source_icons or {}
+      )
       -- 移除字段避免 blink 出现非法字段警告
       opts.completion_source_icons = nil
       -- vim.notify("completion_source_icons=" .. vim.inspect(completion_source_icons), vim.log.levels.INFO)

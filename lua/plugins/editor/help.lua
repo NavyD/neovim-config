@@ -17,12 +17,48 @@ return {
       "OXY2DEV/markview.nvim", -- Rich rendering with advanced features
     },
     keys = {
-      { "<leader>cto", "<cmd>NeovimTips<cr>", desc = "Neovim tips", noremap = true, silent = true },
-      { "<leader>cte", "<cmd>NeovimTipsEdit<cr>", desc = "Edit your Neovim tips", noremap = true, silent = true },
-      { "<leader>cta", "<cmd>NeovimTipsAdd<cr>", desc = "Add your Neovim tip", noremap = true, silent = true },
-      { "<leader>cth", "<cmd>help neovim-tips<cr>", desc = "Neovim tips help", noremap = true, silent = true },
-      { "<leader>ctr", "<cmd>NeovimTipsRandom<cr>", desc = "Show random tip", noremap = true, silent = true },
-      { "<leader>ctp", "<cmd>NeovimTipsPdf<cr>", desc = "Open Neovim tips PDF", noremap = true, silent = true },
+      {
+        "<leader>cto",
+        "<cmd>NeovimTips<cr>",
+        desc = "Neovim tips",
+        noremap = true,
+        silent = true,
+      },
+      {
+        "<leader>cte",
+        "<cmd>NeovimTipsEdit<cr>",
+        desc = "Edit your Neovim tips",
+        noremap = true,
+        silent = true,
+      },
+      {
+        "<leader>cta",
+        "<cmd>NeovimTipsAdd<cr>",
+        desc = "Add your Neovim tip",
+        noremap = true,
+        silent = true,
+      },
+      {
+        "<leader>cth",
+        "<cmd>help neovim-tips<cr>",
+        desc = "Neovim tips help",
+        noremap = true,
+        silent = true,
+      },
+      {
+        "<leader>ctr",
+        "<cmd>NeovimTipsRandom<cr>",
+        desc = "Show random tip",
+        noremap = true,
+        silent = true,
+      },
+      {
+        "<leader>ctp",
+        "<cmd>NeovimTipsPdf<cr>",
+        desc = "Open Neovim tips PDF",
+        noremap = true,
+        silent = true,
+      },
     },
     ---@module 'neovim_tips'
     ---@type NeovimTipsOptions

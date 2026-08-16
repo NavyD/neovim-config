@@ -36,7 +36,8 @@ M.shlex = {
   debug = 0,
   token = "",
   commenters = "#",
-  wordchars = "abcdfeghijklmnopqrstuvwxyz" .. "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_",
+  wordchars = "abcdfeghijklmnopqrstuvwxyz"
+    .. "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_",
 }
 M.shlex.__index = M.shlex
 
@@ -100,7 +101,13 @@ function M.shlex:read_token()
     end
 
     if self.debug >= 3 then
-      print("shlex: in state '" .. (self.state or "nil") .. "' I see character: '" .. (nextchar or "nil") .. "'")
+      print(
+        "shlex: in state '"
+          .. (self.state or "nil")
+          .. "' I see character: '"
+          .. (nextchar or "nil")
+          .. "'"
+      )
     end
 
     -- lua doesn't have continue statements and Lua 5.1 sadly don't have goto
@@ -125,13 +132,19 @@ function M.shlex:read_token()
       elseif not continue and self.commenters:find(nextchar, 1, true) then
         self.sr:readline()
         self.lineno = self.lineno + 1
-      elseif not continue and self.posix and self.escape:find(nextchar, 1, true) then
+      elseif
+        not continue
+        and self.posix
+        and self.escape:find(nextchar, 1, true)
+      then
         escapedstate = "a"
         self.state = nextchar
       elseif not continue and self.wordchars:find(nextchar, 1, true) then
         self.token = nextchar
         self.state = "a"
-      elseif not continue and self.punctuation_chars:find(nextchar, 1, true) then
+      elseif
+        not continue and self.punctuation_chars:find(nextchar, 1, true)
+      then
         self.token = nextchar
         self.state = "c"
       elseif not continue and self.quotes:find(nextchar, 1, true) then
@@ -166,7 +179,11 @@ function M.shlex:read_token()
         else
           self.state = "a"
         end
-      elseif self.posix and self.escape:find(nextchar, 1, true) and self.escapedquotes:find(self.state, 1, true) then
+      elseif
+        self.posix
+        and self.escape:find(nextchar, 1, true)
+        and self.escapedquotes:find(self.state, 1, true)
+      then
         escapedstate = self.state
         self.state = nextchar
       else
@@ -179,7 +196,11 @@ function M.shlex:read_token()
         end
         error("no escaped character")
       end
-      if self.quotes:find(escapedstate, 1, true) and nextchar ~= self.state and nextchar ~= escapedstate then
+      if
+        self.quotes:find(escapedstate, 1, true)
+        and nextchar ~= self.state
+        and nextchar ~= escapedstate
+      then
         self.token = self.token .. self.state
       end
       self.token = self.token .. nextchar
@@ -219,9 +240,17 @@ function M.shlex:read_token()
           self.state = " "
           break
         end
-      elseif not continue and self.posix and self.quotes:find(nextchar, 1, true) then
+      elseif
+        not continue
+        and self.posix
+        and self.quotes:find(nextchar, 1, true)
+      then
         self.state = nextchar
-      elseif not continue and self.posix and self.escape:find(nextchar, 1, true) then
+      elseif
+        not continue
+        and self.posix
+        and self.escape:find(nextchar, 1, true)
+      then
         escapedstate = "a"
         self.state = nextchar
       elseif
@@ -229,7 +258,10 @@ function M.shlex:read_token()
         and (
           self.wordchars:find(nextchar, 1, true)
           or self.quotes:find(nextchar, 1, true)
-          or (self.whitespace_split and not self.punctuation_chars:find(nextchar, 1, true))
+          or (
+            self.whitespace_split
+            and not self.punctuation_chars:find(nextchar, 1, true)
+          )
         )
       then
         self.token = self.token .. nextchar

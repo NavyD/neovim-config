@@ -45,7 +45,8 @@ local function build_jieba_co(plugin)
     return
   end
 
-  local gh_url_fmt = os.getenv("MASON_GITHUB_DOWNLOAD_URL_TEMPLATE") or "https://github.com/%s/releases/download/%s/%s"
+  local gh_url_fmt = os.getenv("MASON_GITHUB_DOWNLOAD_URL_TEMPLATE")
+    or "https://github.com/%s/releases/download/%s/%s"
   local gh_url = gh_url_fmt:format("kkew3/jieba.vim", tag_name, url_filename)
 
   local build_args = { "curl", "-fsSLo", lib_path_tmp, gh_url }
@@ -53,7 +54,12 @@ local function build_jieba_co(plugin)
   local process = require("utils.process")
   local curl_sc = process.run_co(build_args)
   if curl_sc.code ~= 0 then
-    log_error("Failed to run `" .. table.concat(build_args, " ") .. "`: " .. (curl_sc.stderr or ""))
+    log_error(
+      "Failed to run `"
+        .. table.concat(build_args, " ")
+        .. "`: "
+        .. (curl_sc.stderr or "")
+    )
     return
   end
 
@@ -63,7 +69,14 @@ local function build_jieba_co(plugin)
   log_info("Moving " .. lib_path_tmp .. " to " .. lib_path)
   local rename_err, rename_ok = auv.fs_rename(lib_path_tmp, lib_path)
   if not rename_ok then
-    log_error("Failed to rename " .. lib_path_tmp .. " to " .. lib_path .. " with error: " .. rename_err)
+    log_error(
+      "Failed to rename "
+        .. lib_path_tmp
+        .. " to "
+        .. lib_path
+        .. " with error: "
+        .. rename_err
+    )
     return
   end
 end

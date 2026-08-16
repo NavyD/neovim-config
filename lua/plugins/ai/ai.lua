@@ -53,7 +53,8 @@ local function get_minuet_provider_presets()
           -- Consider using APPDATA instead.
           api_key = get_ollama_api_key,
           name = "qwen-coder",
-          end_point = ollama_base_url and ollama_base_url .. "/v1/completions" or "",
+          end_point = ollama_base_url and ollama_base_url .. "/v1/completions"
+            or "",
           model = "qwen2.5-coder:1.5b",
           -- only send the request every x milliseconds, use 0 to disable throttle.
           throttle = 800,
@@ -71,7 +72,9 @@ local function get_minuet_provider_presets()
           -- NOTE: sweep-next-edit 不支持 openai_fim_compatible
           -- Can't get qwen3-coder:30b from a local ollama to work
           -- https://github.com/milanglacier/minuet-ai.nvim/issues/125#issuecomment-3724763618
-          end_point = ollama_base_url and ollama_base_url .. "/v1/chat/completions" or "",
+          end_point = ollama_base_url
+              and ollama_base_url .. "/v1/chat/completions"
+            or "",
           model = "sweepai/sweep-next-edit:latest",
           -- model = "hf.co/sweepai/sweep-next-edit-0.5B:latest",
           -- only send the request every x milliseconds, use 0 to disable throttle.
@@ -146,7 +149,10 @@ return {
     ---@type misel.EnvOpts
     opts = {
       reload_lazy_plugins = {
-        ["minuet-ai.nvim"] = { "MINUET_PROVIDER_DEEPSEEK_API_KEY", "MINUET_PROVIDER_OLLAMA_BASE_URL" },
+        ["minuet-ai.nvim"] = {
+          "MINUET_PROVIDER_DEEPSEEK_API_KEY",
+          "MINUET_PROVIDER_OLLAMA_BASE_URL",
+        },
       },
     },
   },
@@ -192,7 +198,9 @@ return {
           -- 默认为所有类型启用 inline 补全，注意小模型不实用
           -- auto_trigger_ft = { "*" },
           -- NOTE: 如果没有任何 LLM 提供会导致输入频繁的触发错误
-          auto_trigger_ft = minuet_enabled() and { "lua", "python", "javascript" } or {},
+          auto_trigger_ft = minuet_enabled()
+              and { "lua", "python", "javascript" }
+            or {},
           keymap = {
             -- `A-A` 会影响插入模式下使用 A 到行最后，虽然可以使用 `-A` 代替
             -- 使用 `<Tab>` 会影响插入模式下的 tab 缩进插入

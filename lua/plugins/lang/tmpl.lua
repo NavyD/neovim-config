@@ -45,7 +45,8 @@ return {
         ["*"] = function(name, conf_opts)
           -- 传入的 lspconfig 只包括 lazyvim 配置声明的部分，
           -- 需要结合默认配置，否则通常 filetypes 为空
-          local fts = conf_opts.filetypes or (vim.lsp.config[name] or {}).filetypes
+          local fts = conf_opts.filetypes
+            or (vim.lsp.config[name] or {}).filetypes
           if not fts or #fts <= 0 then
             return false
           end
@@ -66,7 +67,11 @@ return {
             end)
             :flatten(math.huge)
             :totable()
-          conf_opts.filetypes = vim.iter({ fts, composite_fts }):flatten(math.huge):unique():totable()
+          conf_opts.filetypes = vim
+            .iter({ fts, composite_fts })
+            :flatten(math.huge)
+            :unique()
+            :totable()
           return false
         end,
       },

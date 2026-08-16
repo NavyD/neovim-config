@@ -22,7 +22,10 @@ function process.run_co(cmd, opts)
     local sc = {
       code = 1,
       signal = 0,
-      stderr = ("Failed to invoke command `%s`: %s"):format(table.concat(cmd, " "), so_or_err),
+      stderr = ("Failed to invoke command `%s`: %s"):format(
+        table.concat(cmd, " "),
+        so_or_err
+      ),
     }
     future.set_error(sc)
   end
