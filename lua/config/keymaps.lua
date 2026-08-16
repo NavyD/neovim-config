@@ -57,7 +57,8 @@ if vim.g.vscode == 1 then
     -- [Go to next error/warning/info #105795](https://github.com/microsoft/vscode/issues/105795)
     local diag_act =
       vsc_actions(string.format("editor.action.marker.%s", direction))
-    notify(string.format("setting key %s with level", key, level_name))
+    -- notify(string.format("setting key %s with level", key, level_name))
+    -- 在 info 时使用默认的动作跳转所有级别 diagnostic，与 nvim 一致
     keymaps("n", key, is_info_level and diag_act or vsc_actions({
       -- https://marketplace.visualstudio.com/items?itemName=yy0931.go-to-next-error
       -- 上面的无法区分 warn/error，下面的修复了这个问题
