@@ -49,7 +49,27 @@ local function build_jieba_co(plugin)
     or "https://github.com/%s/releases/download/%s/%s"
   local gh_url = gh_url_fmt:format("kkew3/jieba.vim", tag_name, url_filename)
 
-  local build_args = { "curl", "-fsSLo", lib_path_tmp, gh_url }
+  local build_args = {
+    "curl",
+    -- 断点续传
+    "--continue-at",
+    "-",
+    -- 重试
+    "--retry",
+    "5",
+    "--retry-max-time",
+    "10",
+    "--retry-connrefused",
+    -- 连接超时
+    "--connect-timeout",
+    "3",
+    "--max-time",
+    "10",
+    "-fsSL",
+    "--output",
+    lib_path_tmp,
+    gh_url,
+  }
   log_info("Building jieba.vim with args: " .. table.concat(build_args, " "))
   local process = require("utils.process")
   local curl_sc = process.run_co(build_args)
@@ -64,8 +84,27 @@ local function build_jieba_co(plugin)
   end
 
   local auv = require("nio").uv
-  -- TODO: 移动tmp到Pyd，避免init时无法加载
-  -- 在加载前将 tmp 文件移动为实际 pyd 文件，避免加载后无法删除
+  if vim.fn.has("win32") == 1 then
+    local _, lib_st = auv.fs_stat(lib_path)
+    if lib_st then
+      -- 在 windows 上先重命名已加载的 dll 避免文件正在使用的错误
+      local old_lib_path = lib_path .. ".old"
+      log_info("Moving " .. lib_path .. " to " .. old_lib_path)
+      local rename_old_err, rename_old_ok =
+        auv.fs_rename(lib_path, old_lib_path)
+      if not rename_old_ok then
+        log_error(
+          "Failed to rename "
+            .. lib_path
+            .. " to "
+            .. old_lib_path
+            .. " with error: "
+            .. (rename_old_err or "")
+        )
+        -- 重命名忽略错误即可
+      end
+    end
+  end
   log_info("Moving " .. lib_path_tmp .. " to " .. lib_path)
   local rename_err, rename_ok = auv.fs_rename(lib_path_tmp, lib_path)
   if not rename_ok then
