@@ -11,6 +11,7 @@ return {
   { "Bilal2453/luvit-meta", name = "luvit-types", lazy = true },
   { "DrKJeff16/wezterm-types", name = "wezterm-types", lazy = true },
   { "LuaCATS/openresty", name = "lua-openresty-types", lazy = true },
+  { "vscode-neovim/vscode-neovim", name = "vscode-neovim", lazy = true },
   {
     "folke/lazydev.nvim",
     -- NOTE: 当使用 lazydev emmyluals 时会导致 diagnostics 无法显示，所以禁用，
@@ -26,6 +27,7 @@ return {
         { path = "busted-types/library", words = { "describe" } },
         { path = "wezterm-types", mods = { "wezterm" } },
         { path = "lua-openresty-types/library", words = { "ngx" } },
+        { path = "vscode-neovim/runtime/lua", mods = { "vscode" } },
       },
     },
   },
