@@ -6,12 +6,13 @@ if vim.g.vscode == 1 then
   -- 参考配置 https://github.com/wenjinnn/.dotfiles/blob/main/xdg/config/nvim/plugin/keymaps.lua
   -- vscode配置：https://github.com/Matt-FTW/dotfiles/blob/main/.config/nvim/lua/plugins/extras/util/vscode.lua
   local keymaps = vim.keymap.set
+  local notify = require("vscode").notify
 
   ---@class VscodeActionOpts
   ---@field args table?
   ---@field range table?
   ---@field restore_selection boolean?
-  ---@field callback function(err: string|nil, ret: any)
+  ---@field callback fun(err: string|nil, ret: any)
   ---@class VscodeAction
   ---@field name string
   ---@field opts? VscodeActionOpts
@@ -39,27 +40,78 @@ if vim.g.vscode == 1 then
     end
   end
 
-  local vscode = require("vscode")
-  vscode.eval_async("return await vscode.commands.getCommands(true)", {
-    ---@diagnostic disable-next-line: unused-local
-    callback = function(err, ret)
-      -- go to error
-      local act_next_err = nil
-      local act_prev_err = nil
-      -- 检查扩展的命令是否存在
-      if vim.list_contains(ret, "go-to-next-error.next.error") then
-        -- NOTE: vscode默认的动作不区分err/war/inf
-        -- 参考[Go to next error/warning/info #105795](https://github.com/microsoft/vscode/issues/105795)
-        act_next_err = "go-to-next-error.next.error"
-        act_prev_err = "go-to-next-error.prev.error"
-      else
-        act_next_err = "editor.action.marker.next"
-        act_prev_err = "editor.action.marker.prev"
-      end
-      keymaps("n", "]e", vsc_actions(act_next_err), { desc = "Go to next error" })
-      keymaps("n", "[e", vsc_actions(act_prev_err), { desc = "Go to prev error" })
-    end,
-  })
+  -- 配置 diagnostic 跳转
+  local levels = vim.lsp.log.levels
+  ---@param direction 'next'|'prev'
+  ---@param level integer
+  local function set_diag_keymap(direction, level)
+    local level_name = levels[level]:lower()
+    local is_info_level = level_name == "info"
+    local key = string.format(
+      "%s%s",
+      direction == "next" and "]" or "[",
+      -- 使用首字母 ]d/]w/]e
+      is_info_level and "d" or level_name:sub(1, 1)
+    )
+    -- NOTE: vscode默认的动作不区分err/war/inf 参考
+    -- [Go to next error/warning/info #105795](https://github.com/microsoft/vscode/issues/105795)
+    local diag_act =
+      vsc_actions(string.format("editor.action.marker.%s", direction))
+    notify(string.format("setting key %s with level", key, level_name))
+    keymaps("n", key, is_info_level and diag_act or vsc_actions({
+      -- https://marketplace.visualstudio.com/items?itemName=yy0931.go-to-next-error
+      -- 上面的无法区分 warn/error，下面的修复了这个问题
+      -- https://marketplace.visualstudio.com/items?itemName=JimmyZJX.go-to-next-problem
+      name = string.format("go-to-next-problem.%s", direction),
+      opts = {
+        args = { severity = { level_name } },
+        callback = function(err, _)
+          if err then
+            notify(
+              "Please install the plugin `go-to-next-problem` to avoid "
+                .. "falling back to "
+                .. level_name
+                .. "diagnostic by error: "
+                .. vim.inspect(err),
+              levels.WARN
+            )
+            diag_act()
+          end
+        end,
+      },
+    }), {
+      desc = string.format(
+        "Go to %s%s diagnostic",
+        direction,
+        is_info_level and "" or level_name
+      ),
+    })
+  end
+  for _, direction in ipairs({ "next", "prev" }) do
+    for _, level in ipairs({ levels.INFO, levels.WARN, levels.ERROR }) do
+      set_diag_keymap(direction, level)
+    end
+  end
+  -- Retrieve the list of all available commands. Commands starting with an
+  -- underscore are treated as internal commands.
+  -- https://code.visualstudio.com/api/references/vscode-api#commands
+  -- vscode.eval_async("return await vscode.commands.getCommands(true)", {
+  --   ---@param err string?
+  --   ---@param ret string[]
+  --   callback = function(err, ret)
+  --     if err then
+  --       vim.notify("error=" .. vim.inspect(err), vim.log.levels.ERROR)
+  --       return
+  --     end
+  --     -- 检查扩展的命令是否存在
+  --     -- NOTE: 根据启动方式(local/server)的不同可能会无法找到插件注册的命令，
+  --     -- 这是由于VS Code 的懒加载大部分扩展尚未激活
+  --     if not vim.list_contains(ret, "go-to-next-problem.next") then
+  --       return
+  --     end
+  --   end,
+  -- })
+
   keymaps(
     "n",
     "]h",
