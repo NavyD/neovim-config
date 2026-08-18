@@ -72,6 +72,47 @@ return {
         terminal = {
           height = get_last_terminal_height_ratio,
           on_close = set_last_terminal_height_ratio,
+          on_win = function(swin)
+            -- 在离开 buf 前更新 last_inserted 为当前的 mode 是否为插入模式
+            swin:on(
+              { "BufLeave", "BufHidden", "BufDelete", "ExitPre" },
+              function()
+                local m = vim.api.nvim_get_mode()
+                vim.g[last_inserted_key] = m.mode == "t"
+              end,
+              { buf = true }
+            )
+            -- 在进入 buf 时根据上次是否为插入模式决定是否插入
+            swin:on("BufEnter", function()
+              if vim.g[last_inserted_key] then
+                vim.cmd.startinsert()
+              end
+            end, { buf = true })
+
+            -- NOTE: WinResized/VimResized 都是全局事件，如果使用
+            -- buf=true|win=true 会导致无法触发
+            swin:on("WinResized", function(win)
+              if
+                win:win_valid()
+                and vim.tbl_contains(
+                  vim.v.event and vim.v.event.windows or {},
+                  win.win
+                )
+              then
+                set_last_terminal_height_ratio(win)
+              end
+            end)
+
+            swin:on("VimResized", function(win)
+              if win.opts.resize == false or not win:win_valid() then
+                return
+              end
+              local h = get_last_terminal_height_ratio(win) * vim.o.lines
+              -- 四舍五入避免多次改变窗口导致比例偏移
+              h = math.floor(h + 0.5)
+              vim.api.nvim_win_set_height(win.win, h)
+            end)
+          end,
           -- on_win = function(term_win)
           --   -- 保持终端最后的编辑模式在下次进入时保持一致
           --   -- 实现参考：
@@ -94,46 +135,6 @@ return {
         start_insert = true,
         -- 不使用 snacks.terminal 内置的逻辑，自定义逻辑保持最后插入模式
         auto_insert = false,
-        hack_on_open = function(term_win, _, _)
-          -- 在离开 buf 前更新 last_inserted 为当前的 mode 是否为插入模式
-          term_win:on(
-            { "BufLeave", "BufHidden", "BufDelete", "ExitPre" },
-            function()
-              local m = vim.api.nvim_get_mode()
-              vim.g[last_inserted_key] = m.mode == "t"
-            end,
-            { buf = true }
-          )
-          -- 在进入 buf 时根据上次是否为插入模式决定是否插入
-          term_win:on("BufEnter", function()
-            if vim.g[last_inserted_key] then
-              vim.cmd.startinsert()
-            end
-          end, { buf = true })
-
-          -- 下面的都可以放入 styles.terminal.on_win
-          term_win:on("WinResized", function(win)
-            if
-              win:win_valid()
-              and vim.tbl_contains(
-                vim.v.event and vim.v.event.windows or {},
-                win.win
-              )
-            then
-              set_last_terminal_height_ratio(win)
-            end
-          end)
-
-          term_win:on("VimResized", function(win)
-            if win.opts.resize == false or not win:win_valid() then
-              return
-            end
-            local h = get_last_terminal_height_ratio(win) * vim.o.lines
-            -- 四舍五入避免多次改变窗口导致比例偏移
-            h = math.floor(h + 0.5)
-            vim.api.nvim_win_set_height(win.win, h)
-          end)
-        end,
       },
     },
   },
