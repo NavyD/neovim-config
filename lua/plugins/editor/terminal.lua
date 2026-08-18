@@ -26,6 +26,33 @@ local function get_snacks_terminal_key(swin)
   return key
 end
 
+---@param swin snacks.win
+local function set_last_terminal_height_ratio(swin)
+  local key = get_snacks_terminal_key(swin)
+  if key then
+    -- 使用百分比的方法可以在窗口关闭打开时与 resized 事件放大/缩小窗口，
+    -- 也可以仅使用 height >= 1 的固定大小
+    local height_ratio = vim.api.nvim_win_get_height(swin.win) / vim.o.lines
+    vim.g[key] = height_ratio
+    -- vim.notify("Saving terminal key=" .. key .. " height=" .. height_ratio)
+  end
+end
+
+---@param swin snacks.win
+local function get_last_terminal_height_ratio(swin)
+  -- 使用大写开头可让 sessionoptions globals 持久化变量值
+  local key = get_snacks_terminal_key(swin)
+  local default_height = 0.48
+  if not key then
+    return default_height
+  end
+  local old_height = vim.g[key]
+  if old_height == nil then
+    return default_height
+  end
+  return old_height
+end
+
 ---@module 'lazy'
 ---@type LazySpec
 return {
@@ -43,28 +70,8 @@ return {
         -- NOTE: terminal 的配置会影响 lazygit，必须覆盖
         lazygit = { height = 0.9 },
         terminal = {
-          height = function(swin)
-            -- 使用大写开头可让 sessionoptions globals 持久化变量值
-            local key = get_snacks_terminal_key(swin)
-            local default_height = 0.48
-            if not key then
-              return default_height
-            end
-            local old_height = vim.g[key]
-            if old_height == nil then
-              return default_height
-            end
-            return old_height
-          end,
-          on_close = function(swin)
-            local key = get_snacks_terminal_key(swin)
-            if key then
-              -- 使用百分比的方法可以在窗口关闭打开时与 resized 事件放大/缩小窗口，
-              -- 也可以仅使用 height >= 1 的固定大小
-              vim.g[key] = vim.api.nvim_win_get_height(swin.win) / vim.o.lines
-              -- vim.notify("Saving terminal key=" .. key .. " height=" .. vim.g[key])
-            end
-          end,
+          height = get_last_terminal_height_ratio,
+          on_close = set_last_terminal_height_ratio,
           -- on_win = function(term_win)
           --   -- 保持终端最后的编辑模式在下次进入时保持一致
           --   -- 实现参考：
@@ -103,6 +110,29 @@ return {
               vim.cmd.startinsert()
             end
           end, { buf = true })
+
+          -- 下面的都可以放入 styles.terminal.on_win
+          term_win:on("WinResized", function(win)
+            if
+              win:win_valid()
+              and vim.tbl_contains(
+                vim.v.event and vim.v.event.windows or {},
+                win.win
+              )
+            then
+              set_last_terminal_height_ratio(win)
+            end
+          end)
+
+          term_win:on("VimResized", function(win)
+            if win.opts.resize == false or not win:win_valid() then
+              return
+            end
+            local h = get_last_terminal_height_ratio(win) * vim.o.lines
+            -- 四舍五入避免多次改变窗口导致比例偏移
+            h = math.floor(h + 0.5)
+            vim.api.nvim_win_set_height(win.win, h)
+          end)
         end,
       },
     },
