@@ -121,7 +121,10 @@ function Persisted.save(path, o)
     return w_err
   end
   if w_bytes ~= #json_str then
-    return "invalid write byte size=" .. w_bytes .. " for content size=" .. #json_str
+    return "invalid write byte size="
+      .. w_bytes
+      .. " for content size="
+      .. #json_str
   end
   return nil
 end
@@ -155,7 +158,8 @@ function ThemeData.new(path)
 
   nio.scheduler()
   ---@type autotheme.BackgroundThemeData
-  local default = { background = vim.o.background or "dark", dark = {}, light = {} }
+  local default =
+    { background = vim.o.background or "dark", dark = {}, light = {} }
   ---@type autotheme.BackgroundThemeData
   obj = vim.tbl_extend("keep", obj, default)
   return setmetatable(obj, { __index = ThemeData }), nil
@@ -268,7 +272,10 @@ function AutoTheme:set_theme(bg)
         end
 
         -- 如果主题未修改 或 bg 未修改且在 set_theme 调用中时退出
-        if vim.g.colors_name == name or (self._background_lock and vim.o.background ~= background) then
+        if
+          vim.g.colors_name == name
+          or (self._background_lock and vim.o.background ~= background)
+        then
           return false
         end
 
@@ -279,7 +286,9 @@ function AutoTheme:set_theme(bg)
         local ok, res = pcall(vim.cmd.colorscheme, name)
         self._background_lock = false
         if not ok then
-          log.error("Failed to set theme " .. name .. " with error: " .. (res or ""))
+          log.error(
+            "Failed to set theme " .. name .. " with error: " .. (res or "")
+          )
           return false
         end
         return true
@@ -297,7 +306,8 @@ local _autotheme_fut = nil
 
 function M.setup(_)
   _autotheme_fut = nio.control.future()
-  local augroup = vim.api.nvim_create_augroup("MyAutoThemeGroup", { clear = true })
+  local augroup =
+    vim.api.nvim_create_augroup("MyAutoThemeGroup", { clear = true })
   vim.api.nvim_create_autocmd("VimEnter", {
     pattern = "*",
     group = augroup,
@@ -305,14 +315,22 @@ function M.setup(_)
       nio.run(function()
         -- NOTE: 在启动时 yield 到主线程以使用 vim.fn 避免 read file 死循环
         nio.scheduler()
-        local filepath = vim.fs.joinpath(vim.fn.stdpath("state"), ".autotheme.json")
+        local filepath =
+          vim.fs.joinpath(vim.fn.stdpath("state"), ".autotheme.json")
         local t, t_err = AutoTheme.new(filepath, augroup)
         if not t then
           log.error("Failed to init autotheme: " .. t_err)
           return
         end
+
+        -- background 默认值为 dark，如果检测终端支持 OSC 11 会自动设置导致
+        -- was_set=true
+        local bg_info = vim.api.nvim_get_option_info2("background", {})
+        -- 默认 nil 让内部使用上次的 bg
+        -- 如果 background 是被修改过的则使用其值
+        local bg = bg_info.was_set and vim.o.background or nil
         -- 在启动时优先 set_theme，外部主动的 set_theme 后置生效
-        t:set_theme()
+        t:set_theme(bg)
         _autotheme_fut.set(t)
       end)
     end,
