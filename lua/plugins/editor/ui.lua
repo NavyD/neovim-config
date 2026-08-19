@@ -2,6 +2,20 @@
 ---@type LazySpec
 return {
   {
+    "snacks.nvim",
+    optional = true,
+    ---@type snacks.Config
+    opts = {
+      notifier = {
+        ---@type snacks.notifier.style
+        style = "compact",
+        -- 默认 %R： 24小时制（时:分）
+        -- %T： 24小时制（时:分:秒）
+        date_format = "%T",
+      },
+    },
+  },
+  {
     "nvim-mini/mini.animate",
     optional = true,
     -- NOTE: 在 vscode 中禁用避免滚动出问题，使用 `vscode=true` 无效

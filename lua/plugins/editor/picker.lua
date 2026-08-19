@@ -34,6 +34,35 @@ return {
                 },
               },
             },
+            -- 默认实现见 snacks.nvim/lua/snacks/picker/format.lua:723，
+            -- 只有时间行被改动："%R"→"%T"、宽度 5→8，其余完全照搬
+            ---@see snacks.picker.formatters.notification
+            format = function(item, picker)
+              local a = Snacks.picker.util.align
+              ---@type snacks.picker.Highlight[]
+              local ret = {}
+              ---@type snacks.notifier.Notif
+              local notif = item.item
+              -- added 为纳秒精度浮点秒，手动拆分秒与毫秒（%f 不被 LuaJIT 支持）
+              local sec = math.floor(notif.added)
+              local ms = math.floor((notif.added % 1) * 1000 + 0.5) -- 四舍五入避免浮点误差
+              local time = os.date("%T", sec) .. string.format(".%03d", ms)
+              ret[#ret + 1] = { a(time, #time), "SnacksPickerTime" }
+              ret[#ret + 1] = { " " }
+              if item.severity then
+                vim.list_extend(
+                  ret,
+                  Snacks.picker.format.severity(item, picker)
+                )
+              end
+              ret[#ret + 1] = { " " }
+              ret[#ret + 1] =
+                { a(notif.title or "", 15), "SnacksNotifierHistoryTitle" }
+              ret[#ret + 1] = { " " }
+              ret[#ret + 1] = { notif.msg, "SnacksPickerNotificationMessage" }
+              Snacks.picker.highlight.markdown(ret)
+              return ret
+            end,
           },
         },
       },
