@@ -35,21 +35,64 @@ return {
       },
     },
   },
-  -- {
-  --   "LazyVim/LazyVim",
-  --   optional = true,
-  --   ---@type LazyVimConfig
-  --   opts = {
-  --     -- 在启动后首次执行 `colorscheme catppuccin-latte` 等主题切换后 bufferline
-  --     -- 颜色未改变，再次 colorscheme 切换才会生效。这可能是 tokyonight,catppuccin
-  --     -- 需要专门适配，所以这里不会覆盖原 lazyvim 的主题配置
-  --     --- FIXME: [Bug]: highlights are not fully reloaded on ColorScheme autocmd
-  --     --- https://github.com/akinsho/bufferline.nvim/issues/1030
-  --     -- colorscheme = function()
-  --     --   require("tokyonight").load()
-  --     -- end,
-  --   },
-  -- },
+  {
+    "LazyVim/LazyVim",
+    optional = true,
+    ---@type LazyVimConfig
+    opts = {
+      -- 在启动后首次执行 `colorscheme catppuccin-latte` 等主题切换后 bufferline
+      -- 颜色未改变，再次 colorscheme 切换才会生效。这可能是 tokyonight,catppuccin
+      -- 需要专门适配，所以这里不会覆盖原 lazyvim 的主题配置
+      --- FIXME: [Bug]: highlights are not fully reloaded on ColorScheme autocmd
+      --- https://github.com/akinsho/bufferline.nvim/issues/1030
+      colorscheme = function()
+        -- 移除 lazyvim 的主题配置，让 autotheme,auto-dark-mode 配置
+        -- require("tokyonight").load()
+
+        -- 在首次切换主题时检查，如果是 catppuccin 类型的主题则再次切换修复
+        -- bufferline 的高亮问题
+        vim.api.nvim_create_autocmd("ColorScheme", {
+          -- 只执行一次
+          once = true,
+          callback = function(args)
+            -- NOTE: 如果有其它主题也无法在启动时首次切换主题无法设置 bufferline
+            -- 的高亮，可以根据需要扩展任意主题
+            if not args.match:match("^catppuccin") then
+              return
+            end
+            vim.schedule(function()
+              local ok, res = pcall(vim.cmd.colorscheme, args.match)
+              if not ok then
+                vim.notify(
+                  string.format(
+                    "failed to run `colorscheme %s` by error: %s",
+                    args.match,
+                    res
+                  ),
+                  vim.log.levels.ERROR
+                )
+              end
+            end)
+          end,
+        })
+
+        -- NOTE: ai 的解决方案
+        -- 原理：切换前组已被清除 → 主题加载后 ColorScheme 事件中 bufferline
+        -- 设置成功（组不存在）；后续切换主题自身 hi clear 兜底，清除幂等无害；
+        -- transparent.nvim 的 BufferLineFill 透明不受影响（其在
+        -- ColorScheme 事件中强制设置）。
+        -- vim.api.nvim_create_autocmd("ColorSchemePre", {
+        --   callback = function()
+        --     for _, name in
+        --       ipairs(vim.fn.getcompletion("BufferLine*", "highlight"))
+        --     do
+        --       vim.api.nvim_set_hl(0, name, {})
+        --     end
+        --   end,
+        -- })
+      end,
+    },
+  },
   {
     dir = vim.fs.joinpath(vim.fn.stdpath("config"), "local_plugins/autotheme"),
     dependencies = { "nvim-neotest/nvim-nio" },
