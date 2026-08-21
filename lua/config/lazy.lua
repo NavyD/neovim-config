@@ -27,6 +27,9 @@ require("lazy").setup({
     -- add LazyVim and import its plugins
     { "LazyVim/LazyVim", import = "lazyvim.plugins" },
     -- extras
+    -- NOTE: 这里只加载所有系统通用插件，由于 vim.fn.executable 在部分系统如
+    -- windows/wsl2 中非常耗时，需要手动在 `:LazyExtras` 中启用或在
+    -- lazyvim.json 中添加
     { import = "lazyvim.plugins.extras.coding.mini-surround" },
     { import = "lazyvim.plugins.extras.coding.yanky" },
     { import = "lazyvim.plugins.extras.editor.dial" },
@@ -45,9 +48,10 @@ require("lazy").setup({
     { import = "lazyvim.plugins.extras.lang.yaml" },
     { import = "lazyvim.plugins.extras.lsp.neoconf" },
     { import = "lazyvim.plugins.extras.test.core" },
-    { import = "lazyvim.plugins.extras.ui.mini-indentscope" },
+    -- Neovim Lua plugin to animate common Neovim actions.
+    -- https://github.com/nvim-mini/mini.animate
     { import = "lazyvim.plugins.extras.ui.mini-animate" },
-    { import = "lazyvim.plugins.extras.ui.smear-cursor" },
+    -- 用于显示当前可见缓冲区内容的上下文，通常是在最上面显示当前光标所在的函数
     { import = "lazyvim.plugins.extras.ui.treesitter-context" },
     { import = "lazyvim.plugins.extras.util.dot" },
     { import = "lazyvim.plugins.extras.util.mini-hipatterns" },
