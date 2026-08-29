@@ -55,18 +55,18 @@ return {
           -- 只执行一次
           once = true,
           callback = function(args)
-            -- NOTE: 如果有其它主题也无法在启动时首次切换主题无法设置 bufferline
-            -- 的高亮，可以根据需要扩展任意主题
-            if not args.match:match("^catppuccin") then
-              return
-            end
             vim.schedule(function()
-              local ok, res = pcall(vim.cmd.colorscheme, args.match)
+              local name = args.match
+              vim.notify(
+                string.format("refresh `colorscheme %s` at first switch", name),
+                vim.log.levels.INFO
+              )
+              local ok, res = pcall(vim.cmd.colorscheme, name)
               if not ok then
                 vim.notify(
                   string.format(
                     "failed to run `colorscheme %s` by error: %s",
-                    args.match,
+                    name,
                     res
                   ),
                   vim.log.levels.ERROR
