@@ -9,3 +9,6 @@ data
 lazyvim.json
 lazy-lock.json
 .worktrees/
+
+docs/superpowers/
+AGENTS.md
