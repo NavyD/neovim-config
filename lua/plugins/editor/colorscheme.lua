@@ -57,10 +57,6 @@ return {
           callback = function(args)
             vim.schedule(function()
               local name = args.match
-              vim.notify(
-                string.format("refresh `colorscheme %s` at first switch", name),
-                vim.log.levels.INFO
-              )
               local ok, res = pcall(vim.cmd.colorscheme, name)
               if not ok then
                 vim.notify(
