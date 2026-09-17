@@ -60,6 +60,19 @@ return {
     -- [No worry about nested Nvim in Nvim terminal](https://github.com/brianhuster/unnest.nvim)
     "brianhuster/unnest.nvim",
     lazy = false,
+    -- 仅在 windows 上配置覆盖 unnest.nvim 修改包含可能存在空格的
+    -- VISUAL，避免使用 git 编辑命令时出现 `C:Program: command not found`
+    init = vim.fn.has("win32") == 1 and function()
+      vim.api.nvim_create_autocmd("VimEnter", {
+        once = true,
+        -- 由于 unnest 使用 plugin/xx.lua 自动加载无法使用 config()，只能在
+        -- vimenter 中修改
+        callback = vim.schedule_wrap(function()
+          vim.env.VISUAL = "nvim"
+          vim.env.EDITOR = vim.env.VISUAL
+        end),
+      })
+    end or nil,
   },
   {
     "folke/snacks.nvim",
