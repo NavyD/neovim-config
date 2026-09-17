@@ -53,6 +53,16 @@ local function get_last_terminal_height_ratio(swin)
   return old_height
 end
 
+local lazygit_edit_cmd = string.format(
+  -- 注意 cmd.exe 的语法问题
+  -- lazygit 实际调用的命令：
+  -- `cmd /s /c "nvim -l "C:/Users/xxx/AppData/Local/nvim/lua/utils/edit-nvim-remote.lua" -- "C:\Users\xxx\AppData\Local\nvim\space fuck file.txt""`
+  'nvim -l "%s" -- ',
+  vim.fs
+    .joinpath(vim.fn.stdpath("config"), "lua/utils/edit-nvim-remote.lua")
+    :gsub("\\", "/")
+)
+
 ---@module 'lazy'
 ---@type LazySpec
 return {
@@ -79,6 +89,20 @@ return {
     ---@module 'snacks'
     ---@type snacks.Config
     opts = {
+      lazygit = {
+        config = {
+          os = vim.fn.has("win32") == 1 and {
+            -- https://github.com/jesseduffield/lazygit/blob/master/docs/Config.md#configuring-file-editing
+            edit = lazygit_edit_cmd .. "{{filename}}",
+            editAtLine = lazygit_edit_cmd .. "{{filename}} {{line}}",
+            openDirInEditor = lazygit_edit_cmd .. "{{dir}}",
+            -- Whether lazygit suspends until an edit process returns
+            -- 在 nvim lazygit 内编辑时暂停 lazygit 避免后 nvim 再打开一个
+            -- lazygit 实例
+            editInTerminal = true,
+          } or nil,
+        },
+      },
       styles = {
         -- NOTE: terminal 的配置会影响 lazygit，必须覆盖
         lazygit = { height = 0.9 },
