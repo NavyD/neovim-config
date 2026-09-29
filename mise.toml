@@ -1,8 +1,7 @@
 [tools]
 typos = "latest"
 gitleaks = "latest"
-python = "3.11"
-"pipx:pre-commit-hooks" = "latest"
+python = "3.13"
 "pipx:commitizen" = "latest"
 yamllint = "latest"
 actionlint = "latest"
