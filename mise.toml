@@ -2,6 +2,7 @@
 typos = "latest"
 gitleaks = "latest"
 python = "3.13"
+uv = "latest"
 "pipx:commitizen" = "latest"
 yamllint = "latest"
 actionlint = "latest"
