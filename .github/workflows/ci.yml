@@ -1,98 +1,49 @@
-name: CI
-
+name: Prek checks
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  lint:
+  pre-commit:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Cache mise
-        id: cache-mise
-        if: ${{ env.ACT }}
-        uses: actions/cache@v4
+      - uses: jdx/mise-action@v4
         with:
-          path: |
-            ~/.local/share/mise
-          key: act-${{runner.os}}-mise-${{hashFiles('mise.*.toml', 'mise.toml')}}
-          restore-keys: |
-            act-${{runner.os}}-mise-${{hashFiles('mise.*.toml', 'mise.toml')}}
-            act-${{runner.os}}-mise-
-      - uses: jdx/mise-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v45
-        with:
-          separator: ":"
-          # set to false because we are using an environment variable to store the output and avoid command injection.
-          safe_output: false
-      - name: lint changed files with lefthook
-        env:
-          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
-        run: |
-          IFS=':' read -r -a changed_files <<<"$ALL_CHANGED_FILES"
-          opts=()
-          for file in "${changed_files[@]}"; do
-              opts+=( "--file" "$file" )
-          done
-          set -x
-          lefthook run pre-commit "${opts[@]}"
-
-  # luals-check:
-  #   runs-on: ubuntu-latest
-  #   env:
-  #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #   # https://github.com/williamboman/mason.nvim/blob/main/.github/workflows/tests.yml
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       nvim_version:
-  #         # - v0.10.4
-  #         - v0.11.0
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 1
-  #     # https://github.com/williamboman/mason.nvim/blob/main/.github/workflows/tests.yml
-  #     # https://github.com/rhysd/action-setup-vim
-  #     - uses: rhysd/action-setup-vim@v1
-  #       with:
-  #         neovim: true
-  #         version: ${{ matrix.nvim_version }}
-  #     - name: Cache mise
-  #       id: cache-mise
-  #       if: ${{ env.ACT }}
-  #       uses: actions/cache@v4
-  #       with:
-  #         path: |
-  #           ~/.local/share/mise
-  #         key: act-${{runner.os}}-mise-${{hashFiles('mise.*.toml', 'mise.toml')}}
-  #         restore-keys: |
-  #           act-${{runner.os}}-mise-${{hashFiles('mise.*.toml', 'mise.toml')}}
-  #           act-${{runner.os}}-mise-
-  #     - uses: jdx/mise-action@v2
-  #     - name: Cache nvim data
-  #       id: cache-nvim-data
-  #       uses: actions/cache@v4
-  #       with:
-  #         path: |
-  #           ~/.local/share/${{ github.event.repository.name }}
-  #           ~/AppData/Local/${{ github.event.repository.name }}
-  #         key: act-${{runner.os}}-nvim-data-${{matrix.nvim_version}}-${{hashFiles('*.lua')}}
-  #         restore-keys: |
-  #           act-${{runner.os}}-nvim-data-${{matrix.nvim_version}}-${{hashFiles('*.lua')}}
-  #           act-${{runner.os}}-nvim-data-${{matrix.nvim_version}}-
-  #     - name: init nvim
-  #       # 使用当前仓库作为nvim 配置目录，`nvim -u init.lua` 无效
-  #       run: XDG_CONFIG_HOME=$(dirname "$PWD") NVIM_APPNAME=$(basename "$PWD") nvim --headless -c 'q'
-  #     - name: luals check
-  #       run: lua-language-server --configpath .luarc.lua --check .
+          minimum_release_age: 7d
+      - name: Run prek
+        # editorconfig-checker-disable
+        run: >-
+          prek run --show-diff-on-failure --color=always
+          ${{
+            (
+              github.event_name == 'pull_request' && format(
+                '--from-ref {0} --to-ref {1}',
+                github.event.pull_request.base.sha,
+                github.event.pull_request.head.sha
+              )
+            ) ||
+            (
+              github.event_name == 'push' &&
+                github.event.before != '0000000000000000000000000000000000000000' &&
+                format(
+                  '--from-ref {0} --to-ref {1}',
+                  github.event.before,
+                  github.event.after
+                )
+            ) ||
+            '--all-files'
+          }}
+        # editorconfig-checker-enable
