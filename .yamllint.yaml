@@ -1,0 +1,8 @@
+extends: relaxed
+
+rules:
+  # 由 editorconfig 处理
+  line-length: disable
+
+ignore: |
+  **/*mise/locks

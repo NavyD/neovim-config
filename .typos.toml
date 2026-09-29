@@ -6,3 +6,6 @@ extend-ignore-re = [
   "(?Rm)^.*(#|--|//|/*)\\s*(spellchecker|typos):\\s*disable-line$",
   "(?s)(#|--|//|/*)\\s*(spellchecker|typos):\\s*disable.*?\\n\\s*(#|//#|--|//|/*)\\s*(spellchecker|typos):\\s*enable"
 ]
+
+[files]
+extend-exclude = ["**/*mise/locks"]
