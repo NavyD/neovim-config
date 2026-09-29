@@ -233,6 +233,43 @@ aube = { path = ".mise/locks/markdownlint-cli2/0.23.3", digest = "sha256:66eb146
 backend = "npm:markdownlint-cli2"
 specifiers = ["latest"]
 
+[[tools.node]]
+version = "26.10.0"
+backend = "core:node"
+specifiers = ["26"]
+
+[tools.node.options]
+mirror_url = "https://mirrors.ustc.edu.cn/node/"
+
+[tools.node."platforms.linux-arm64"]
+checksum = "sha256:423a41bff8e2a2fa15e702fefe2919ef95823b2378744daccb8439302534b44f"
+url = "https://mirrors.ustc.edu.cn/node/v26.10.0/node-v26.10.0-linux-arm64.tar.gz"
+
+[tools.node."platforms.linux-arm64-musl"]
+checksum = "sha256:093087c5cc00d185637f8682c5afaf3c967b557e3eefa41c46e3dc5cf3f8e8e5"
+url = "https://mirrors.ustc.edu.cn/node/v26.10.0/node-v26.10.0.tar.gz"
+install = "source"
+
+[tools.node."platforms.linux-x64"]
+checksum = "sha256:cb5c9ce9c80d7b8821e3a258543c71b939138cf17c74d5cc44bbe85d6dbc5ad8"
+url = "https://mirrors.ustc.edu.cn/node/v26.10.0/node-v26.10.0-linux-x64.tar.gz"
+
+[tools.node."platforms.linux-x64-musl"]
+checksum = "sha256:1bdf60c8141e5152604baf8b38f31e191b3794f60fce2b71351e78c4021f0166"
+url = "https://mirrors.ustc.edu.cn/node/v26.10.0/node-v26.10.0-linux-x64-musl.tar.gz"
+
+[tools.node."platforms.macos-arm64"]
+checksum = "sha256:751fdf7439f115d87ee2a8f3f18c065b6151852068e3e666ac60ac2996f75ac9"
+url = "https://mirrors.ustc.edu.cn/node/v26.10.0/node-v26.10.0-darwin-arm64.tar.gz"
+
+[tools.node."platforms.macos-x64"]
+checksum = "sha256:ebbe9ab9b58ad6bb54390d6e2c862c1afa7d4475fb7e8ae8146acde211bf70df"
+url = "https://mirrors.ustc.edu.cn/node/v26.10.0/node-v26.10.0-darwin-x64.tar.gz"
+
+[tools.node."platforms.windows-x64"]
+checksum = "sha256:9fef7eca6743a6b910989cd8e78712376b394fcb9b6e1e9c44a0799a287f90c5"
+url = "https://mirrors.ustc.edu.cn/node/v26.10.0/node-v26.10.0-win-x64.zip"
+
 [[tools."pipx:commitizen"]]
 version = "4.19.0"
 backend = "pipx:commitizen"
