@@ -10,17 +10,11 @@ stylua = "latest"
 tombi = "latest"
 prettier = "latest"
 markdownlint-cli2 = "latest"
+prek = "latest"
 
 [tools."github:editorconfig-checker/editorconfig-checker"]
 version = "3"
 matching = "editorconfig-checker"
-
-[tools.'github:evilmartians/lefthook']
-version = "1"
-# rename_exe = 'lefthook{% if os_family() == "windows" %}.exe{% endif %}'
-# mise 自动匹配到了 lefthook_1.13.6_Linux_arm64, 而不是 lefthook_1.13.6_Linux_arm64.tar.gz
-# 所有需要使用 bin 而不是 rename_exe，等待后续迁移 lefthook 到 prek
-bin = "lefthook"
 
 [tools."github:luarocks/luarocks"]
 version = "3.12"

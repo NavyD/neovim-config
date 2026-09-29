@@ -1,0 +1,129 @@
+# $schema:https://www.schemastore.org/pre-commit-config.json
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+  - pre-push
+  - post-checkout
+  - post-merge
+  - post-rewrite
+
+# A fast Git hook manager written in Rust, designed as a drop-in alternative to
+# pre-commit, reimagined. https://github.com/j178/prek
+minimum_prek_version: "0.4.14"
+
+fail_fast: false
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-illegal-windows-names
+        priority: &lint 1000
+      - id: check-case-conflict
+        priority: *lint
+      - id: check-merge-conflict
+        priority: *lint
+      - id: check-executables-have-shebangs
+        priority: *lint
+      - id: check-added-large-files
+        priority: *lint
+      - id: check-symlinks
+        priority: *lint
+      - id: destroyed-symlinks
+        priority: *lint
+  - repo: local
+    hooks:
+      - id: gitleaks
+        name: Detect hardcoded secrets
+        description: Detect hardcoded secrets using Gitleaks
+        entry: gitleaks git --pre-commit --redact --staged --verbose
+        language: system
+        pass_filenames: false
+        priority: *lint
+      - id: actionlint
+        name: actionlint
+        description: Lint GitHub workflows with actionlint
+        entry: actionlint
+        language: system
+        types: [yaml]
+        files: "^.github/workflows/"
+        priority: *lint
+      - id: editorconfig-checker
+        name: "Check .editorconfig rules"
+        description: >-
+          Runs system executable of `editorconfig-checker` to lint text
+          files according to `.editorconfig` rules
+        language: system
+        entry: editorconfig-checker
+        types: [text]
+        priority: *lint
+      - id: markdownlint-cli2
+        name: markdownlint-cli2
+        description: "Checks the style of Markdown/CommonMark files."
+        entry: markdownlint-cli2
+        language: system
+        types: [markdown]
+        priority: *lint
+      - id: yamllint
+        name: yamllint
+        description: This hook runs yamllint.
+        entry: yamllint
+        # return non-zero exit code on warnings as well as errors
+        args: [--strict]
+        language: system
+        types: [yaml]
+        priority: *lint
+      - id: commitizen
+        name: commitizen check
+        description: >
+          Check whether the current commit message follows committing rules. Allow
+          empty commit messages by default, because they typically indicate to Git
+          that the commit should be aborted.
+        entry: cz check
+        args: [--allow-abort, --commit-msg-file]
+        stages: [commit-msg]
+        language: system
+        priority: *lint
+      ## format ##
+      - id: prettier
+        name: prettier
+        description: format with prettier
+        entry: npx prettier --write --ignore-unknown
+        language: system
+        types: [text]
+        stages: [pre-commit]
+        priority: &fmt 100
+      - id: tombi-format
+        name: tombi-format
+        description: "A TOML formatter"
+        entry: tombi format
+        args: [--offline]
+        exclude: '^.*\.lock$'
+        language: system
+        types: [toml]
+        priority: *fmt
+      - id: stylua
+        name: StyLua
+        description: An opinionated Lua code formatter
+        entry: stylua
+        language: system
+        types: [lua]
+        priority: *fmt
+      ## fix ##
+      - id: typos
+        name: typos
+        description: Source code spell checker, binary install
+        language: system
+        entry: typos
+        args: [--write-changes, --force-exclude]
+        types: [text]
+        stages: [pre-commit, pre-merge-commit, pre-push, manual, commit-msg]
+        priority: 11
+      - id: autocorrect-fix
+        name: autocorrect fix
+        description: "Fix typography using autocorrect."
+        language: system
+        entry: autocorrect --fix
+        types: [text]
+        stages: [pre-commit, commit-msg]
+        priority: 10
